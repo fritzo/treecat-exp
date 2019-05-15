@@ -16,7 +16,9 @@ from pyro.contrib.tabular.treecat import print_tree
 from pyro.optim import Adam
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-RESULTS = os.path.join(ROOT, "data")
+TRAIN = os.path.join(ROOT, "results", "train")
+if not os.path.exists(TRAIN):
+    os.makedirs(TRAIN)
 
 
 def print_params(model):
@@ -122,16 +124,17 @@ def main(args):
             logging.info("epoch {} loss = {}".format(epoch, epoch_loss / num_batches))
 
             # Save model and metadata.
-            pyro.get_param_store().save(os.path.join(RESULTS, "{}.model.pyro".format(args.dataset)))
+            model.save()
+            pyro.get_param_store().save(os.path.join(TRAIN, "{}.model.pyro".format(args.dataset)))
             meta = {"args": args, "losses": losses, "stepsizes": stepsizes}
-            with open(os.path.join(RESULTS, "{}.meta.pkl".format(args.dataset)), "wb") as f:
+            with open(os.path.join(TRAIN, "{}.meta.pkl".format(args.dataset)), "wb") as f:
                 pickle.dump(meta, f, pickle.HIGHEST_PROTOCOL)
     print_params(model)
 
 
 if __name__ == "__main__":
     assert pyro.__version__ >= "0.3.3"
-    parser = argparse.ArgumentParser(description="TreeCat experiments")
+    parser = argparse.ArgumentParser(description="TreeCat training")
     parser.add_argument("--dataset", default="boston_housing")
     parser.add_argument("--max-num-rows", default=1000000000, type=int)
     parser.add_argument("--only-features")

@@ -5,10 +5,13 @@ all: test
 install: FORCE
 	pip install -r requirements.txt
 
+dirs: FORCE
+	mkdir -p data results/train results/test
+
 lint: FORCE
 	flake8
 
-test: FORCE lint
+test: FORCE lint dirs
 	python train.py -n 1
 
 #clean: FORCE
