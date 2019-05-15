@@ -13,6 +13,7 @@ lint: FORCE
 
 test: FORCE lint dirs
 	python train.py -n 1
+	python evaluate.py
 
 #clean: FORCE
 #	find . -name '*.pyc' -delete -o -name '*.log' -delete

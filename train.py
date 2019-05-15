@@ -23,13 +23,13 @@ if not os.path.exists(TRAIN):
 
 def print_params(model):
     torch.set_printoptions(precision=3, linewidth=120)
-    logging.info("\n".join(
+    logging.debug("\n".join(
         ["Param store:", "----------------------------------------"] +
         ["{} =\n{}".format(key, value.data.cpu())
          for key, value in sorted(pyro.get_param_store().items())] +
         ["----------------------------------------"]))
     feature_names = [f.name for f in model.features]
-    logging.info("Tree:\n{}".format(print_tree(model.edges, feature_names)))
+    logging.debug("Tree:\n{}".format(print_tree(model.edges, feature_names)))
 
 
 @contextmanager
@@ -83,16 +83,16 @@ def main(args):
     num_cells = num_rows * len(features)
     logging.info("loaded {} rows x {} features = {} cells".format(
         num_rows, len(features), num_cells))
-    logging.info("\n".join(["Features:"] + [str(f) for f in features]))
+    logging.debug("\n".join(["Features:"] + [str(f) for f in features]))
 
     # Initialize the model.
     logging.debug("Initializing from {} rows".format(args.init_size))
-    pyro.set_rng_seed(123456789)
-    pyro.clear_param_store()
+    pyro.set_rng_seed(args.seed)
+    pyro.get_param_store().clear()
     pyro.enable_validation(__debug__)
     model = TreeCat(features, args.capacity, annealing_rate=args.annealing_rate)
     optim = Adam({"lr": args.learning_rate})
-    trainer = TreeCatTrainer(model, optim, backend=args.backend)
+    trainer = TreeCatTrainer(model, optim)
     for batch in partition_data(data, args.init_size):
         trainer.init(batch)
         break
@@ -139,12 +139,12 @@ if __name__ == "__main__":
     parser.add_argument("--max-num-rows", default=1000000000, type=int)
     parser.add_argument("--only-features")
     parser.add_argument("-c", "--capacity", default=8, type=int)
-    parser.add_argument("-lr", "--learning-rate", default=0.04, type=float)
+    parser.add_argument("-lr", "--learning-rate", default=0.02, type=float)
     parser.add_argument("-ar", "--annealing-rate", default=0.01, type=float)
     parser.add_argument("-n", "--num-epochs", default=100, type=int)
     parser.add_argument("-b", "--batch-size", default=32, type=int)
-    parser.add_argument("-i", "--init-size", default=200, type=int)
-    parser.add_argument("--backend", default="cpp")
+    parser.add_argument("-i", "--init-size", default=1024, type=int)
+    parser.add_argument("--seed", default=123456789, type=int)
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
