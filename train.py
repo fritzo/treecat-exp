@@ -10,15 +10,11 @@ import torch
 from six.moves import cPickle as pickle
 
 import pyro
-from preprocess import load_data, partition_data
 from pyro.contrib.tabular import TreeCat, TreeCatTrainer
 from pyro.contrib.tabular.treecat import print_tree
 from pyro.optim import Adam
-
-ROOT = os.path.dirname(os.path.abspath(__file__))
-TRAIN = os.path.join(ROOT, "results", "train")
-if not os.path.exists(TRAIN):
-    os.makedirs(TRAIN)
+from treecat_exp.preprocess import load_data, partition_data
+from treecat_exp.util import TRAIN
 
 
 def print_params(model):

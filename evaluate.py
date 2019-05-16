@@ -12,15 +12,10 @@ import torch
 from six.moves import cPickle as pickle
 
 import pyro
-from preprocess import load_data, partition_data
 from pyro.contrib.tabular import TreeCat
 from pyro.infer import TraceEnum_ELBO
-
-ROOT = os.path.dirname(os.path.abspath(__file__))
-TRAIN = os.path.join(ROOT, "results", "train")
-TEST = os.path.join(ROOT, "results", "test")
-if not os.path.exists(TEST):
-    os.makedirs(TEST)
+from treecat_exp.preprocess import load_data, partition_data
+from treecat_exp.util import TEST, TRAIN
 
 
 class LossFunction(object):

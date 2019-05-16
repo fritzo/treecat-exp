@@ -10,10 +10,7 @@ from observations import boston_housing
 from pyro.contrib.tabular import Boolean, Discrete, Real
 from six.moves import cPickle as pickle
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
-RAWDATA = os.path.join(ROOT, "rawdata")
-DATA = os.path.join(ROOT, "data")
-RESULTS = os.path.join(ROOT, "data")
+from treecat_exp.util import DATA, RAWDATA
 
 
 def load_data(args):
