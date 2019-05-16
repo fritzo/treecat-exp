@@ -5,8 +5,9 @@ import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAWDATA = os.path.join(ROOT, "rawdata")
 DATA = os.path.join(ROOT, "data")
-TRAIN = os.path.join(ROOT, "results", "train")
-TEST = os.path.join(ROOT, "results", "test")
+RESULTS = os.environ.get("RESULTS", os.path.join(ROOT, "results"))
+TRAIN = os.path.join(RESULTS, "train")
+TEST = os.path.join(RESULTS, "test")
 
 if not os.path.exists(TRAIN):
     os.makedirs(TRAIN)
