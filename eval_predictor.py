@@ -3,9 +3,7 @@ from __future__ import absolute_import, division, print_function
 import argparse
 import logging
 import os
-import signal
 import sys
-from contextlib import contextmanager
 
 import numpy as np
 from six.moves import cPickle as pickle
@@ -15,13 +13,6 @@ from pyro.contrib.tabular import TreeCat
 from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.regression import Regressor
 from treecat_exp.util import TEST, TRAIN
-
-
-@contextmanager
-def interrupt(fn, *args, **kwargs):
-    signal.signal(signal.SIGINT, lambda *_: fn(*args, **kwargs))
-    yield
-    signal.signal(signal.SIGINT, signal.default_int_handler)
 
 
 def main(args):
@@ -88,7 +79,7 @@ if __name__ == "__main__":
     parser.add_argument("--max-num-rows", default=9999999999, type=int)
     parser.add_argument("--max-num-batches", default=9999999999, type=int)
     parser.add_argument("-c", "--capacity", default=8, type=int)
-    parser.add_argument("-q", "--quantiles", default="0.1,0.2,0.5,0.8,0.9")
+    parser.add_argument("-q", "--quantiles", default="0.1,0.2,0.5,0.8,0.9,1.0")
     parser.add_argument("-b", "--batch-size", default=1024, type=int)
     parser.add_argument("--seed", default=123456789, type=int)
     parser.add_argument("-v", "--verbose", action="store_true")

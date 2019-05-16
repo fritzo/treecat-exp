@@ -75,7 +75,7 @@ def main(args):
             for q in quantiles:
                 while True:
                     mask = torch.distributions.Bernoulli(q).sample((len(batch),))
-                    if (mask == 0).any():
+                    if mask.sum() >= 1 and (1 - mask).sum() >= 1:
                         break
                 masked_batch = [col if m else None for (col, m) in zip(batch, mask)]
                 masked_loss = loss_fn(masked_batch)

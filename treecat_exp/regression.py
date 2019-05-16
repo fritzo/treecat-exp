@@ -31,7 +31,7 @@ class Regressor(object):
                     raise NotImplementedError("TODO")
         self.in_dim = sum(self.in_dims)
         self.out_classes = np.array(range(out_feature.cardinality))
-        self.predictor = linear_model.SGDClassifier(max_iter=1000, tol=1e-3)
+        self.predictor = linear_model.SGDClassifier()
 
     def _encode(self, data):
         for col in data:
@@ -52,7 +52,7 @@ class Regressor(object):
         while True:
             mask = torch.distributions.Bernoulli(self.quantile).sample((len(data),))
             mask[self.out_pos] = 0
-            if (1 - mask).sum() >= 2:
+            if mask.sum() >= 1 and (1 - mask).sum() >= 1:
                 break
         masked_data = [col if m else None for (col, m) in zip(data, mask)]
         imputed_data = self.imputer(masked_data)
