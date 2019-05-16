@@ -66,7 +66,7 @@ def main(args):
     # Save results.
     for q, score in scores.items():
         logging.info("score at {:0.3g}: {:0.3g}".format(q, np.mean(score)))
-    metrics = {"args": args, "scores": scores}
+    metrics = {"args": args, "scores": scores, "predictors": predictors}
     with open(os.path.join(TEST, "{}.eval_predictor.pkl".format(args.dataset)), "wb") as f:
         pickle.dump(metrics, f, pickle.HIGHEST_PROTOCOL)
 
