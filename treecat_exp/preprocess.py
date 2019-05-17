@@ -26,6 +26,7 @@ def load_boston_housing(args):
             dataset = pickle.load(f)
     else:
         x_train, metadata = boston_housing(DATA)
+        x_train = x_train[torch.randperm(len(x_train))]
         x_train = torch.tensor(x_train.T, dtype=torch.get_default_dtype()).contiguous()
         features = []
         data = []
