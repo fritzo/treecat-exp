@@ -9,7 +9,6 @@ import numpy as np
 from six.moves import cPickle as pickle
 
 import pyro
-from pyro.contrib.tabular import TreeCat
 from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.regression import Regressor
 from treecat_exp.util import TEST, TRAIN
@@ -30,8 +29,8 @@ def main(args):
     pyro.enable_validation(__debug__)
     pyro.get_param_store().clear()
     pyro.get_param_store().load(os.path.join(TRAIN, "{}.model.pyro".format(args.dataset)))
-    model = TreeCat(features, args.capacity)
-    model.load()
+    with open(os.path.join(TRAIN, "{}.model.pkl".format(args.dataset)), "rb") as f:
+        model = pickle.load(f)
 
     # Split data into train and test.
     batches = list(partition_data(data, args.batch_size))

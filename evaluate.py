@@ -10,7 +10,6 @@ import torch
 from six.moves import cPickle as pickle
 
 import pyro
-from pyro.contrib.tabular import TreeCat
 from pyro.infer import TraceEnum_ELBO
 from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.util import TEST, TRAIN, interrupt
@@ -41,8 +40,8 @@ def main(args):
     pyro.enable_validation(__debug__)
     pyro.get_param_store().clear()
     pyro.get_param_store().load(os.path.join(TRAIN, "{}.model.pyro".format(args.dataset)))
-    model = TreeCat(features, args.capacity)
-    model.load()
+    with open(os.path.join(TRAIN, "{}.model.pkl".format(args.dataset)), "rb") as f:
+        model = pickle.load(f)
 
     def save(metrics):
         if args.verbose:
@@ -87,7 +86,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="TreeCat evaluation")
     parser.add_argument("--dataset", default="boston_housing")
     parser.add_argument("--max-num-rows", default=9999999999, type=int)
-    parser.add_argument("-c", "--capacity", default=8, type=int)
     parser.add_argument("-q", "--quantiles", default="0.1,0.2,0.5,0.8,0.9")
     parser.add_argument("-b", "--batch-size", default=1024, type=int)
     parser.add_argument("--seed", default=123456789, type=int)

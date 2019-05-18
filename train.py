@@ -17,8 +17,9 @@ from treecat_exp.util import TRAIN, interrupt
 
 def save(model, meta):
     # Save model and metadata.
-    model.save()
     pyro.get_param_store().save(os.path.join(TRAIN, "{}.model.pyro".format(args.dataset)))
+    with open(os.path.join(TRAIN, "{}.model.pkl".format(args.dataset)), "wb") as f:
+        pickle.dump(model, f, pickle.HIGHEST_PROTOCOL)
     with open(os.path.join(TRAIN, "{}.meta.pkl".format(args.dataset)), "wb") as f:
         pickle.dump(meta, f, pickle.HIGHEST_PROTOCOL)
     if args.verbose:
