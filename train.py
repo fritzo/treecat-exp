@@ -19,13 +19,13 @@ from treecat_exp.util import TRAIN
 
 def print_params(model):
     torch.set_printoptions(precision=3, linewidth=120)
-    logging.debug("\n".join(
+    logging.info("\n".join(
         ["Param store:", "----------------------------------------"] +
         ["{} =\n{}".format(key, value.data.cpu())
          for key, value in sorted(pyro.get_param_store().items())] +
         ["----------------------------------------"]))
     feature_names = [f.name for f in model.features]
-    logging.debug("Tree:\n{}".format(print_tree(model.edges, feature_names)))
+    logging.info("Tree:\n{}".format(print_tree(model.edges, feature_names)))
 
 
 @contextmanager
@@ -92,7 +92,8 @@ def main(args):
     for batch in partition_data(data, args.init_size):
         trainer.init(batch)
         break
-    print_params(model)
+    if args.verbose:
+        print_params(model)
 
     # Train a model.
     logging.debug("Training for {} epochs".format(args.num_epochs))
@@ -125,7 +126,8 @@ def main(args):
             meta = {"args": args, "losses": losses, "stepsizes": stepsizes}
             with open(os.path.join(TRAIN, "{}.meta.pkl".format(args.dataset)), "wb") as f:
                 pickle.dump(meta, f, pickle.HIGHEST_PROTOCOL)
-    print_params(model)
+    if args.verbose:
+        print_params(model)
 
 
 if __name__ == "__main__":
