@@ -3,8 +3,6 @@ from __future__ import absolute_import, division, print_function
 import argparse
 import logging
 import os
-import signal
-from contextlib import contextmanager
 
 import torch
 from six.moves import cPickle as pickle
@@ -14,25 +12,24 @@ from pyro.contrib.tabular import TreeCat, TreeCatTrainer
 from pyro.contrib.tabular.treecat import print_tree
 from pyro.optim import Adam
 from treecat_exp.preprocess import load_data, partition_data
-from treecat_exp.util import TRAIN
+from treecat_exp.util import TRAIN, interrupt
 
 
-def print_params(model):
-    torch.set_printoptions(precision=3, linewidth=120)
-    logging.info("\n".join(
-        ["Param store:", "----------------------------------------"] +
-        ["{} =\n{}".format(key, value.data.cpu())
-         for key, value in sorted(pyro.get_param_store().items())] +
-        ["----------------------------------------"]))
-    feature_names = [f.name for f in model.features]
-    logging.info("Tree:\n{}".format(print_tree(model.edges, feature_names)))
-
-
-@contextmanager
-def printing_params(model):
-    signal.signal(signal.SIGINT, lambda *_: print_params(model))
-    yield
-    signal.signal(signal.SIGINT, signal.default_int_handler)
+def save(model, meta):
+    # Save model and metadata.
+    model.save()
+    pyro.get_param_store().save(os.path.join(TRAIN, "{}.model.pyro".format(args.dataset)))
+    with open(os.path.join(TRAIN, "{}.meta.pkl".format(args.dataset)), "wb") as f:
+        pickle.dump(meta, f, pickle.HIGHEST_PROTOCOL)
+    if args.verbose:
+        torch.set_printoptions(precision=3, linewidth=120)
+        logging.debug("\n".join(
+            ["Param store:", "----------------------------------------"] +
+            ["{} =\n{}".format(key, value.data.cpu())
+             for key, value in sorted(pyro.get_param_store().items())] +
+            ["----------------------------------------"]))
+        feature_names = [f.name for f in model.features]
+        logging.debug("Tree:\n{}".format(print_tree(model.edges, feature_names)))
 
 
 class TreeMonitor(object):
@@ -92,8 +89,6 @@ def main(args):
     for batch in partition_data(data, args.init_size):
         trainer.init(batch)
         break
-    if args.verbose:
-        print_params(model)
 
     # Train a model.
     logging.debug("Training for {} epochs".format(args.num_epochs))
@@ -101,7 +96,8 @@ def main(args):
     param_store_monitor = ParamStoreMonitor()
     stepsizes = []
     losses = []
-    with printing_params(model):
+    meta = {"args": args, "losses": losses, "stepsizes": stepsizes}
+    with interrupt(save, model, meta):
         for epoch in range(args.num_epochs):
             epoch_loss = 0
             num_batches = 0
@@ -119,15 +115,7 @@ def main(args):
                 logging.debug("tree_stepsize = {:0.4g}, feature_stepsize = {:0.4g}, loss = {:0.4g}".format(
                     stepsize["tree"], feature_stepsize, loss))
             logging.info("epoch {} loss = {}".format(epoch, epoch_loss / num_batches))
-
-            # Save model and metadata.
-            model.save()
-            pyro.get_param_store().save(os.path.join(TRAIN, "{}.model.pyro".format(args.dataset)))
-            meta = {"args": args, "losses": losses, "stepsizes": stepsizes}
-            with open(os.path.join(TRAIN, "{}.meta.pkl".format(args.dataset)), "wb") as f:
-                pickle.dump(meta, f, pickle.HIGHEST_PROTOCOL)
-    if args.verbose:
-        print_params(model)
+            save(model, meta)
 
 
 if __name__ == "__main__":

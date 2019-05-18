@@ -3,9 +3,7 @@ from __future__ import absolute_import, division, print_function
 import argparse
 import logging
 import os
-import signal
 import sys
-from contextlib import contextmanager
 
 import numpy as np
 import torch
@@ -15,7 +13,7 @@ import pyro
 from pyro.contrib.tabular import TreeCat
 from pyro.infer import TraceEnum_ELBO
 from treecat_exp.preprocess import load_data, partition_data
-from treecat_exp.util import TEST, TRAIN
+from treecat_exp.util import TEST, TRAIN, interrupt
 
 
 class LossFunction(object):
@@ -26,13 +24,6 @@ class LossFunction(object):
     @torch.no_grad()
     def __call__(self, data):
         return self.elbo.loss(self.model.model, self.model.guide, data)
-
-
-@contextmanager
-def interrupt(fn, *args, **kwargs):
-    signal.signal(signal.SIGINT, lambda *_: fn(*args, **kwargs))
-    yield
-    signal.signal(signal.SIGINT, signal.default_int_handler)
 
 
 def main(args):
