@@ -11,10 +11,12 @@ from six.moves import cPickle as pickle
 import pyro
 from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.regression import Regressor
-from treecat_exp.util import TEST, TRAIN
+from treecat_exp.util import TEST, TRAIN, pdb_post_mortem
 
 
 def main(args):
+    name = "{}.{}".format(args.dataset, args.capacity)
+
     # Load data.
     features, data = load_data(args)
     num_rows = len(data[0])
@@ -28,8 +30,8 @@ def main(args):
     pyro.set_rng_seed(args.seed)
     pyro.enable_validation(__debug__)
     pyro.get_param_store().clear()
-    pyro.get_param_store().load(os.path.join(TRAIN, "{}.model.pyro".format(args.dataset)))
-    with open(os.path.join(TRAIN, "{}.model.pkl".format(args.dataset)), "rb") as f:
+    pyro.get_param_store().load(os.path.join(TRAIN, "{}.model.pyro".format(name)))
+    with open(os.path.join(TRAIN, "{}.model.pkl".format(name)), "rb") as f:
         model = pickle.load(f)
 
     # Split data into train and test.
@@ -66,7 +68,7 @@ def main(args):
     for q, score in scores.items():
         logging.info("score at {:0.3g}: {:0.3g}".format(q, np.mean(score)))
     metrics = {"args": args, "scores": scores, "predictors": predictors}
-    with open(os.path.join(TEST, "{}.eval_predictor.pkl".format(args.dataset)), "wb") as f:
+    with open(os.path.join(TEST, "{}.eval_predictor.pkl".format(name)), "wb") as f:
         pickle.dump(metrics, f, pickle.HIGHEST_PROTOCOL)
 
 
@@ -91,9 +93,5 @@ if __name__ == "__main__":
         ["\t{} = {}".format(key, value)
          for (key, value) in sorted(vars(args).items())]))
 
-    try:
+    with pdb_post_mortem():
         main(args)
-    except (ValueError, RuntimeError, AssertionError) as e:
-        print(e)
-        import pdb
-        pdb.post_mortem(e.__traceback__)

@@ -19,8 +19,22 @@ test: FORCE lint dirs
 	rm -rf temp.results.test
 	@echo PASS
 
-#clean: FORCE
-#	find . -name '*.pyc' -delete -o -name '*.log' -delete
-#	rm -f data/*.pkl model/*
+results: FORCE
+	python train.py --dataset boston_housing -b 64 -n 100 -c 2
+	python train.py --dataset boston_housing -b 64 -n 100 -c 4
+	python train.py --dataset boston_housing -b 64 -n 100 -c 8
+	python train.py --dataset boston_housing -b 64 -n 100 -c 16
+	python train.py --dataset news -b 512 -n 20 -c 2
+	python train.py --dataset news -b 512 -n 20 -c 4
+	python train.py --dataset news -b 512 -n 20 -c 8
+	python train.py --dataset news -b 512 -n 20 -c 16
+	python train.py --dataset census -b 1024 -n 2 -c 2
+	python train.py --dataset census -b 1024 -n 2 -c 4
+	python train.py --dataset census -b 1024 -n 2 -c 8
+	python train.py --dataset census -b 1024 -n 2 -c 16
+
+clean: FORCE
+	find . -name '*.pyc' -delete -o -name '*.log' -delete
+	rm -f data/*.pkl results/*
 
 FORCE:

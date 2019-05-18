@@ -4,23 +4,24 @@ import argparse
 import logging
 import os
 
-import torch
-from six.moves import cPickle as pickle
-
 import pyro
+import torch
 from pyro.contrib.tabular import TreeCat, TreeCatTrainer
 from pyro.contrib.tabular.treecat import print_tree
 from pyro.optim import Adam
+from six.moves import cPickle as pickle
+
 from treecat_exp.preprocess import load_data, partition_data
-from treecat_exp.util import TRAIN, interrupt
+from treecat_exp.util import TRAIN, interrupt, pdb_post_mortem
 
 
 def save(model, meta):
     # Save model and metadata.
-    pyro.get_param_store().save(os.path.join(TRAIN, "{}.model.pyro".format(args.dataset)))
-    with open(os.path.join(TRAIN, "{}.model.pkl".format(args.dataset)), "wb") as f:
+    name = "{}.{}".format(args.dataset, args.capacity)
+    pyro.get_param_store().save(os.path.join(TRAIN, "{}.model.pyro".format(name)))
+    with open(os.path.join(TRAIN, "{}.model.pkl".format(name)), "wb") as f:
         pickle.dump(model, f, pickle.HIGHEST_PROTOCOL)
-    with open(os.path.join(TRAIN, "{}.meta.pkl".format(args.dataset)), "wb") as f:
+    with open(os.path.join(TRAIN, "{}.meta.pkl".format(name)), "wb") as f:
         pickle.dump(meta, f, pickle.HIGHEST_PROTOCOL)
     if args.verbose:
         torch.set_printoptions(precision=3, linewidth=120)
@@ -130,8 +131,8 @@ if __name__ == "__main__":
     parser.add_argument("--max-num-rows", default=1000000000, type=int)
     parser.add_argument("--only-features")
     parser.add_argument("-c", "--capacity", default=8, type=int)
-    parser.add_argument("-lr", "--learning-rate", default=0.02, type=float)
-    parser.add_argument("-ar", "--annealing-rate", default=0.02, type=float)
+    parser.add_argument("-lr", "--learning-rate", default=0.01, type=float)
+    parser.add_argument("-ar", "--annealing-rate", default=0.01, type=float)
     parser.add_argument("-n", "--num-epochs", default=200, type=int)
     parser.add_argument("-b", "--batch-size", default=64, type=int)
     parser.add_argument("-i", "--init-size", default=1024, type=int)
@@ -147,9 +148,5 @@ if __name__ == "__main__":
         ["\t{} = {}".format(key, value)
          for (key, value) in sorted(vars(args).items())]))
 
-    try:
+    with pdb_post_mortem():
         main(args)
-    except (ValueError, RuntimeError, AssertionError) as e:
-        print(e)
-        import pdb
-        pdb.post_mortem(e.__traceback__)
