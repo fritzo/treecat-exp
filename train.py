@@ -88,6 +88,8 @@ def main(args):
     optim = Adam({"lr": args.learning_rate})
     trainer = TreeCatTrainer(model, optim)
     for batch in partition_data(data, args.init_size):
+        if args.cuda:
+            batch = batch.cuda()
         trainer.init(batch)
         break
 
@@ -103,6 +105,8 @@ def main(args):
             epoch_loss = 0
             num_batches = 0
             for batch in partition_data(data, args.batch_size):
+                if args.cuda:
+                    batch = batch.cuda()
                 loss = trainer.step(batch, num_rows=num_rows)
                 loss /= num_cells
                 losses.append(loss)
@@ -132,6 +136,7 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--batch-size", default=64, type=int)
     parser.add_argument("-i", "--init-size", default=1024, type=int)
     parser.add_argument("--seed", default=123456789, type=int)
+    parser.add_argument("--cuda", action="store_true")
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
