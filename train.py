@@ -89,7 +89,7 @@ def main(args):
     trainer = TreeCatTrainer(model, optim)
     for batch in partition_data(data, args.init_size):
         if args.cuda:
-            batch = batch.cuda()
+            batch = [col.cuda() for col in batch]
         trainer.init(batch)
         break
 
@@ -106,7 +106,7 @@ def main(args):
             num_batches = 0
             for batch in partition_data(data, args.batch_size):
                 if args.cuda:
-                    batch = batch.cuda()
+                    batch = [col.cuda() for col in batch]
                 loss = trainer.step(batch, num_rows=num_rows)
                 loss /= num_cells
                 losses.append(loss)
