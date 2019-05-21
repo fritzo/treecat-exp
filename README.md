@@ -1,4 +1,11 @@
 # TreeCat experiments
+# TreeCat experiments
+
+This requires the contrib-treecat branch of Pyro
+https://github.com/pyro-ppl/pyro/pull/1370
+
+See paper at
+https://github.com/fritzo/treecat-paper
 
 ## Potential datasets
 
