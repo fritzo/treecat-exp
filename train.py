@@ -6,7 +6,7 @@ import os
 
 import pyro
 import torch
-from pyro.contrib.tabular import TreeCat, TreeCatTrainer
+from pyro.contrib.tabular import Mixture, TreeCat
 from pyro.contrib.tabular.treecat import print_tree
 from pyro.optim import Adam
 from six.moves import cPickle as pickle
@@ -17,7 +17,7 @@ from treecat_exp.util import TRAIN, interrupt, pdb_post_mortem
 
 def save(model, meta):
     # Save model and metadata.
-    name = "{}.{}".format(args.dataset, args.capacity)
+    name = "{}.{}.{}".format(args.dataset, args.model, args.capacity)
     pyro.get_param_store().save(os.path.join(TRAIN, "{}.model.pyro".format(name)))
     with open(os.path.join(TRAIN, "{}.model.pkl".format(name)), "wb") as f:
         pickle.dump(model, f, pickle.HIGHEST_PROTOCOL)
@@ -31,7 +31,8 @@ def save(model, meta):
              for key, value in sorted(pyro.get_param_store().items())] +
             ["----------------------------------------"]))
         feature_names = [f.name for f in model.features]
-        logging.debug("Tree:\n{}".format(print_tree(model.edges, feature_names)))
+        if isinstance(model, TreeCat):
+            logging.debug("Tree:\n{}".format(print_tree(model.edges, feature_names)))
 
 
 class TreeMonitor(object):
@@ -81,13 +82,18 @@ def main(args):
     logging.debug("\n".join(["Features:"] + [str(f) for f in features]))
 
     # Initialize the model.
-    logging.debug("Initializing from {} rows".format(args.init_size))
+    logging.debug("Initializing {} model from {} rows".format(args.model, args.init_size))
     pyro.set_rng_seed(args.seed)
     pyro.get_param_store().clear()
     pyro.enable_validation(__debug__)
-    model = TreeCat(features, args.capacity, annealing_rate=args.annealing_rate)
+    if args.model == "treecat":
+        model = TreeCat(features, args.capacity, annealing_rate=args.annealing_rate)
+    elif args.model == "mixture":
+        model = Mixture(features, args.capacity)
+    else:
+        raise ValueError("Unknown model: {}".format(args.model))
     optim = Adam({"lr": args.learning_rate})
-    trainer = TreeCatTrainer(model, optim)
+    trainer = model.trainer(optim)
     for batch in partition_data(data, args.init_size):
         if args.cuda:
             batch = [col.cuda() for col in batch]
@@ -96,7 +102,9 @@ def main(args):
 
     # Train a model.
     logging.debug("Training for {} epochs".format(args.num_epochs))
-    tree_monitor = TreeMonitor(model.edges)
+    tree_monitor = None
+    if isinstance(model, TreeCat):
+        tree_monitor = TreeMonitor(model.edges)
     param_store_monitor = ParamStoreMonitor()
     stepsizes = []
     losses = []
@@ -116,10 +124,11 @@ def main(args):
 
                 stepsize = param_store_monitor.get_diffs()
                 feature_stepsize = sum(stepsize.values())
-                stepsize["tree"] = tree_monitor.get_diff(model.edges)
+                if tree_monitor is not None:
+                    stepsize["tree"] = tree_monitor.get_diff(model.edges)
+                    logging.debug("tree_stepsize = {:0.4g}, feature_stepsize = {:0.4g}, loss = {:0.4g}".format(
+                        stepsize["tree"], feature_stepsize, loss))
                 stepsizes.append(stepsize)
-                logging.debug("tree_stepsize = {:0.4g}, feature_stepsize = {:0.4g}, loss = {:0.4g}".format(
-                    stepsize["tree"], feature_stepsize, loss))
             logging.info("epoch {} loss = {}".format(epoch, epoch_loss / num_batches))
             save(model, meta)
 
@@ -130,6 +139,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", default="boston_housing")
     parser.add_argument("--max-num-rows", default=1000000000, type=int)
     parser.add_argument("--only-features")
+    parser.add_argument("-m", "--model", default="treecat")
     parser.add_argument("-c", "--capacity", default=8, type=int)
     parser.add_argument("-lr", "--learning-rate", default=0.01, type=float)
     parser.add_argument("-ar", "--annealing-rate", default=0.01, type=float)
