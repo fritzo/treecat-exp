@@ -26,7 +26,7 @@ class LossFunction(object):
 
 
 def main(args):
-    name = "{}.{}".format(args.dataset, args.capacity)
+    name = "{}.{}.{}".format(args.dataset, args.model, args.capacity)
 
     # Load data.
     features, data = load_data(args)
@@ -90,6 +90,7 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--capacity", default=8, type=int)
     parser.add_argument("-q", "--quantiles", default="0.1,0.2,0.5,0.8,0.9")
     parser.add_argument("-b", "--batch-size", default=1024, type=int)
+    parser.add_argument("-m", "--model", default="treecat")
     parser.add_argument("--seed", default=123456789, type=int)
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
