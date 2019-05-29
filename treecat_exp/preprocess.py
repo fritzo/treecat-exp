@@ -407,8 +407,9 @@ def load_lending(args):
         if not col_mask.any():
             logging.debug("Dropping empty feature: {}".format(name))
             continue
-
-        if not col_mask.all():
+        if col_mask.all():
+            col_mask = True
+        else:
             # Add a presence/absence feature.
             name_nz = "{}_nz".format(name)
             logging.debug("Adding presence feature: {}".format(name_nz))
