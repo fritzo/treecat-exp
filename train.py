@@ -73,7 +73,7 @@ def to_cuda(x):
         return x.cuda()
     if isinstance(x, list):
         return [to_cuda(item) for item in x]
-    if x is None:
+    if x in (None, False, True):
         return x
     raise ValueError(x)
 

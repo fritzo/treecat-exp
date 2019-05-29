@@ -255,10 +255,10 @@ LENDING_SCHEMA = {
     "mo_sin_rcnt_rev_tl_op": Real,
     "mo_sin_rcnt_tl": Real,
     "mort_acc": Count,
-    "mths_since_last_delinq": Count,
-    "mths_since_last_major_derog": Count,
-    "mths_since_last_record": Count,
-    "mths_since_rcnt_il": Count,
+    "mths_since_last_delinq": Real,
+    "mths_since_last_major_derog": Real,
+    "mths_since_last_record": Real,
+    "mths_since_rcnt_il": Real,
     "mths_since_recent_bc": Real,
     "mths_since_recent_bc_dlq": Real,
     "mths_since_recent_inq": Real,
@@ -405,6 +405,9 @@ def load_lending(args):
     data = []
     mask = []
     for name, col_data, col_mask in zip(dataset["names"], dataset["data"], dataset["mask"]):
+        if not col_mask.any():
+            logging.info("Dropping empty feature: {}".format(name))
+            continue
         typ = LENDING_SCHEMA[name]
         if typ is Discrete:
             feature = typ(name, len(dataset["supports"][name]))
