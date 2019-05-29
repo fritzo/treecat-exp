@@ -402,13 +402,17 @@ def load_lending(args):
         with open(filename, "wb") as f:
             pickle.dump(dataset, f, pickle.HIGHEST_PROTOCOL)
     features = []
-    for name in dataset["names"]:
+    data = []
+    mask = []
+    for name, col_data, col_mask in zip(dataset["names"], dataset["data"], dataset["mask"]):
         typ = LENDING_SCHEMA[name]
         if typ is Discrete:
             feature = typ(name, len(dataset["supports"][name]))
         else:
             feature = typ(name)
         features.append(feature)
+        data.append(col_data.to(feature.dtype))
+        mask.append(col_mask)
     return features, data, mask
 
 
