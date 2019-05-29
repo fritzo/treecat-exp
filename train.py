@@ -89,7 +89,7 @@ def main(args):
     else:
         raise ValueError("Unknown model: {}".format(args.model))
     optim = Adam({"lr": args.learning_rate})
-    trainer = model.trainer(optim)
+    trainer = model.trainer(optim, backend="cpp")
     for batch_data, batch_mask in partition_data(data, mask, args.init_size):
         if args.cuda:
             batch_data = [col.cuda() for col in batch_data]
