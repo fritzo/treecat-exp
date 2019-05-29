@@ -13,9 +13,8 @@ from six.moves import cPickle as pickle
 
 from treecat_exp.util import DATA, RAWDATA
 
-# TODO remove this when Count is implemented.
-Count = Discrete
-Text = None
+Count = Discrete  # We currently don't handle count data.
+Text = None  # We currently don't handle text data.
 
 
 def load_data(args):
@@ -378,7 +377,7 @@ def load_lending(args):
                     data[i, j] = value
                     mask[i, j] = True
                     cell_count += 1
-                if i % 10000 == 0:
+                if i % (num_rows // 100) == 0:
                     sys.stderr.write(".")
                     sys.stderr.flush()
         logging.info("loaded {} rows x {} features".format(data.size(0), data.size(1)))
@@ -406,8 +405,19 @@ def load_lending(args):
     mask = []
     for name, col_data, col_mask in zip(dataset["names"], dataset["data"], dataset["mask"]):
         if not col_mask.any():
-            logging.info("Dropping empty feature: {}".format(name))
+            logging.debug("Dropping empty feature: {}".format(name))
             continue
+
+        if not col_mask.all():
+            # Add a presence/absence feature.
+            name_nz = "{}_nz".format(name)
+            logging.debug("Adding presence feature: {}".format(name_nz))
+            feature = Boolean(name_nz)
+            features.append(feature)
+            data.append(col_mask.to(feature.dtype))
+            mask.append(True)
+
+        # Add the feature.
         typ = LENDING_SCHEMA[name]
         if typ is Discrete:
             feature = typ(name, len(dataset["supports"][name]))
