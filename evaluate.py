@@ -21,15 +21,15 @@ class LossFunction(object):
         self.elbo = TraceEnum_ELBO(max_plate_nesting=1)
 
     @torch.no_grad()
-    def __call__(self, data):
-        return self.elbo.loss(self.model.model, self.model.guide, data)
+    def __call__(self, *args, **kwargs):
+        return self.elbo.loss(self.model.model, self.model.guide, *args, **kwargs)
 
 
 def main(args):
-    name = "{}.{}.{}".format(args.dataset, args.model, args.capacity)
+    name = "{}.treecat.{}".format(args.dataset, args.capacity)
 
     # Load data.
-    features, data = load_data(args)
+    features, data, mask = load_data(args)
     num_rows = len(data[0])
     num_cells = num_rows * len(features)
     logging.info("loaded {} rows x {} features = {} cells".format(
@@ -61,20 +61,21 @@ def main(args):
     masks = {q: [] for q in quantiles}
     metrics = {"args": args, "losses": losses, "masks": masks}
     with interrupt(save, metrics):
-        for batch in partition_data(data, args.batch_size):
-            full_loss = loss_fn(batch)
+        for batch_data, batch_mask in partition_data(data, mask, args.batch_size):
+            full_loss = loss_fn(batch_data, batch_mask)
             for q in quantiles:
                 while True:
-                    mask = torch.distributions.Bernoulli(q).sample((len(batch),))
-                    if mask.sum() >= 1 and (1 - mask).sum() >= 1:
+                    extra_mask = torch.distributions.Bernoulli(q).sample((len(batch_data),))
+                    if extra_mask.sum() >= 1 and (1 - extra_mask).sum() >= 1:
                         break
-                masked_batch = [col if m else None for (col, m) in zip(batch, mask)]
-                masked_loss = loss_fn(masked_batch)
-                num_imputed_cells = len(batch[0]) * (1 - mask).sum().item()
+                masked_batch = [col if m else None for (col, m) in zip(batch_data, extra_mask)]
+                masked_mask = [col if m else False for (col, m) in zip(batch_mask, extra_mask)]
+                masked_loss = loss_fn(masked_batch, masked_mask)
+                num_imputed_cells = len(batch_data[0]) * (1 - extra_mask).sum().item()
                 loss = (full_loss - masked_loss) / num_imputed_cells
                 assert loss > 0
                 losses[q].append(loss)
-                masks[q].append(mask)
+                masks[q].append(extra_mask)
             if args.verbose:
                 sys.stdout.write(".")
                 sys.stdout.flush()

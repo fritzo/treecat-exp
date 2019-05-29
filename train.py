@@ -70,11 +70,7 @@ class ParamStoreMonitor(object):
 
 def main(args):
     # Load data.
-    features, data = load_data(args)
-    if args.only_features:
-        fs = [int(f) for f in args.only_features.split(",")]
-        features = [features[f] for f in fs]
-        data = [data[f] for f in fs]
+    features, data, mask = load_data(args)
     num_rows = len(data[0])
     num_cells = num_rows * len(features)
     logging.info("loaded {} rows x {} features = {} cells".format(
@@ -94,10 +90,12 @@ def main(args):
         raise ValueError("Unknown model: {}".format(args.model))
     optim = Adam({"lr": args.learning_rate})
     trainer = model.trainer(optim)
-    for batch in partition_data(data, args.init_size):
+    for batch_data, batch_mask in partition_data(data, mask, args.init_size):
         if args.cuda:
-            batch = [col.cuda() for col in batch]
-        trainer.init(batch)
+            batch_data = [col.cuda() for col in batch_data]
+            batch_mask = [col.cuda() if isinstance(col, torch.Tensor) else col
+                          for col in batch_mask]
+        trainer.init(batch_data, batch_mask)
         break
 
     # Train a model.
@@ -113,10 +111,12 @@ def main(args):
         for epoch in range(args.num_epochs):
             epoch_loss = 0
             num_batches = 0
-            for batch in partition_data(data, args.batch_size):
+            for batch_data, batch_mask in partition_data(data, mask, args.batch_size):
                 if args.cuda:
-                    batch = [col.cuda() for col in batch]
-                loss = trainer.step(batch, num_rows=num_rows)
+                    batch_data = [col.cuda() for col in batch_data]
+                    batch_mask = [col.cuda() if isinstance(col, torch.Tensor) else col
+                                  for col in batch_mask]
+                loss = trainer.step(batch_data, batch_mask, num_rows=num_rows)
                 loss /= num_cells
                 losses.append(loss)
                 epoch_loss += loss
@@ -138,7 +138,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="TreeCat training")
     parser.add_argument("--dataset", default="boston_housing")
     parser.add_argument("--max-num-rows", default=1000000000, type=int)
-    parser.add_argument("--only-features")
     parser.add_argument("-m", "--model", default="treecat")
     parser.add_argument("-c", "--capacity", default=8, type=int)
     parser.add_argument("-lr", "--learning-rate", default=0.01, type=float)
