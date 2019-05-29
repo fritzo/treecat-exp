@@ -12,10 +12,14 @@ RESULTS = os.environ.get("RESULTS", os.path.join(ROOT, "results"))
 TRAIN = os.path.join(RESULTS, "train")
 TEST = os.path.join(RESULTS, "test")
 
-if not os.path.exists(TRAIN):
-    os.makedirs(TRAIN)
-if not os.path.exists(TEST):
-    os.makedirs(TEST)
+
+def mkdir_p(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+
+for path in [RAWDATA, DATA, TRAIN, TEST]:
+    mkdir_p(path)
 
 
 @contextmanager

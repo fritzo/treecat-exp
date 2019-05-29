@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import csv
 import logging
 import os
+import subprocess
 import sys
 from collections import defaultdict
 
@@ -10,8 +11,9 @@ import torch
 from observations import boston_housing
 from pyro.contrib.tabular import Boolean, Discrete, Real
 from six.moves import cPickle as pickle
+from six.moves import urllib
 
-from treecat_exp.util import DATA, RAWDATA
+from treecat_exp.util import DATA, RAWDATA, mkdir_p
 
 Count = Discrete  # We currently don't handle count data.
 Text = None  # We currently don't handle text data.
@@ -24,11 +26,15 @@ def load_data(args):
 
 
 def load_boston_housing(args):
-    filename = os.path.join(DATA, "boston_housing.pkl")
-    if os.path.exists(filename):
-        with open(filename, "rb") as f:
-            dataset = pickle.load(f)
-    else:
+    """
+    See any of the following:
+    http://lib.stat.cmu.edu/datasets/boston
+    https://archive.ics.uci.edu/ml/machine-learning-databases/housing/housing.data
+    https://github.com/edwardlib/observations/blob/master/observations/boston_housing.py
+    """
+    # Convert to torch.
+    cache_filename = os.path.join(DATA, "boston_housing.pkl")
+    if not os.path.exists(cache_filename):
         x_train, metadata = boston_housing(DATA)
         x_train = x_train[torch.randperm(len(x_train))]
         x_train = torch.tensor(x_train.T, dtype=torch.get_default_dtype()).contiguous()
@@ -44,20 +50,31 @@ def load_boston_housing(args):
             "data": data,
             "args": args,
         }
-        with open(filename, "wb") as f:
+        with open(cache_filename, "wb") as f:
             pickle.dump(dataset, f, pickle.HIGHEST_PROTOCOL)
+    with open(cache_filename, "rb") as f:
+        dataset = pickle.load(f)
+
+    # Format columns.
     mask = True
     return dataset["feature"], dataset["data"], mask
 
 
 def load_census(args):
+    """
+    See https://archive.ics.uci.edu/ml/datasets/US+Census+Data+%281990%29
+    """
+    # Convert to torch.
     num_rows = min(2458285, args.max_num_rows)
-    filename = os.path.join(DATA, "census.{}.pkl".format(num_rows))
-    if os.path.exists(filename):
-        with open(filename, "rb") as f:
-            dataset = pickle.load(f)
-    else:
-        with open(os.path.join(RAWDATA, "uci-us-census-1990", "USCensus1990.data.txt")) as f:
+    cache_filename = os.path.join(DATA, "census.{}.pkl".format(num_rows))
+    if not os.path.exists(cache_filename):
+        raw_filename = os.path.join(RAWDATA, "uci-us-census-1990", "USCensus1990.data.txt")
+        if not os.path.exists(raw_filename):
+            mkdir_p(os.path.dirname(raw_filename))
+            urllib.request.urlretrieve(
+                "https://archive.ics.uci.edu/ml/machine-learning-databases/census1990-mld/USCensus1990.data.txt",
+                raw_filename)
+        with open(raw_filename) as f:
             reader = csv.reader(f)
             header = next(reader)[1:]
             num_cols = len(header)
@@ -78,8 +95,12 @@ def load_census(args):
             "data": data,
             "args": args,
         }
-        with open(filename, "wb") as f:
+        with open(cache_filename, "wb") as f:
             pickle.dump(dataset, f, pickle.HIGHEST_PROTOCOL)
+    with open(cache_filename, "rb") as f:
+        dataset = pickle.load(f)
+
+    # Format columns.
     features = []
     data = []
     mask = True
@@ -154,13 +175,27 @@ NEWS_SCHEMA = {
 
 
 def load_news(args):
+    """
+    See https://archive.ics.uci.edu/ml/datasets/Online+News+Popularity
+    """
+    # Convert to torch.
     num_rows = min(39644, args.max_num_rows)
-    filename = os.path.join(DATA, "news.{}.pkl".format(num_rows))
-    if os.path.exists(filename):
-        with open(filename, "rb") as f:
-            dataset = pickle.load(f)
-    else:
-        with open(os.path.join(RAWDATA, "uci-online-news-popularity", "OnlineNewsPopularity.csv")) as f:
+    cache_filename = os.path.join(DATA, "news.{}.pkl".format(num_rows))
+    if not os.path.exists(cache_filename):
+        raw_dir = os.path.join(RAWDATA, "uci-online-news-popularity")
+        raw_filename = os.path.join(raw_dir, "OnlineNewsPopularity.csv")
+        if not os.path.exists(raw_filename):
+            logging.info("Downloading online news popularity dataset")
+            mkdir_p(raw_dir)
+            zip_filename = os.path.join(raw_dir, "OnlineNewsPopularity.zip")
+            urllib.request.urlretrieve(
+                "https://archive.ics.uci.edu/ml/machine-learning-databases/00332/OnlineNewsPopularity.zip",
+                zip_filename)
+            subprocess.check_call(["unzip", "-f", zip_filename, "-d", raw_dir])
+            os.rename(os.path.join(raw_dir, "OnlineNewsPopularity", "OnlineNewsPopularity.csv"),
+                      os.path.join(raw_dir, "OnlineNewsPopularity.csv"))
+
+        with open(raw_filename) as f:
             reader = csv.reader(f)
             header = [name.strip() for name in next(reader)]
             logging.debug(header)
@@ -180,8 +215,12 @@ def load_news(args):
             "data": data,
             "args": args,
         }
-        with open(filename, "wb") as f:
+        with open(cache_filename, "wb") as f:
             pickle.dump(dataset, f, pickle.HIGHEST_PROTOCOL)
+    with open(cache_filename, "rb") as f:
+        dataset = pickle.load(f)
+
+    # Format columns.
     features = []
     data = []
     mask = True
@@ -341,12 +380,21 @@ LENDING_SCHEMA = {
 
 
 def load_lending(args):
+    """
+    See https://www.kaggle.com/wendykan/lending-club-loan-data
+    """
+    # Convert to torch.
     num_rows = min(2260668, args.max_num_rows)
-    filename = os.path.join(DATA, "lending.{}.pkl".format(num_rows))
-    if os.path.exists(filename):
-        with open(filename, "rb") as f:
-            dataset = pickle.load(f)
-    else:
+    cache_filename = os.path.join(DATA, "lending.{}.pkl".format(num_rows))
+    if not os.path.exists(cache_filename):
+        raw_dir = os.path.join(RAWDATA, "kaggle-lending-club", "loan.csv")
+        raw_filename = os.path.join(raw_dir, "loan.csv")
+        if not os.path.exists(raw_filename):
+            mkdir_p(raw_dir)
+            raise ValueError("Data missing\n"
+                             "Please navigate to \n"
+                             "  https://www.kaggle.com/wendykan/lending-club-loan-data\n"
+                             "and download loan.csv in {}".format(os.path.abspath(raw_dir)))
         names = [name for name, typ in LENDING_SCHEMA.items() if typ is not None]
         names.sort()
         positions = {name: pos for pos, name in enumerate(names)}
@@ -355,7 +403,7 @@ def load_lending(args):
         mask = torch.zeros(num_rows, num_cols, dtype=torch.uint8)
         supports = {name: defaultdict(set)
                     for name in names if LENDING_SCHEMA[name] is Discrete}
-        with open(os.path.join(RAWDATA, "kaggle-lending-club", "loan.csv")) as f:
+        with open(raw_filename) as f:
             reader = csv.reader(f)
             header = [name.strip() for name in next(reader)]
             logging.debug(header)
@@ -398,8 +446,12 @@ def load_lending(args):
             "supports": supports,
             "args": args,
         }
-        with open(filename, "wb") as f:
+        with open(cache_filename, "wb") as f:
             pickle.dump(dataset, f, pickle.HIGHEST_PROTOCOL)
+    with open(cache_filename, "rb") as f:
+        dataset = pickle.load(f)
+
+    # Format columns.
     features = []
     data = []
     mask = []
@@ -442,17 +494,21 @@ def partition_data(data, mask, target_size):
     begin = 0
     while begin < num_rows:
         end = begin + target_size
-        batch_data, batch_mask = [], []
+        batch_data = []
+        batch_mask = []
 
         for col_data, col_mask in zip(data, mask):
             if isinstance(col_mask, torch.Tensor):
                 col_mask = col_mask[begin: end]
-                if col_mask.any():
+                if col_mask.all():
+                    col_mask = True
+                elif not col_mask.any():
+                    col_mask = False
+                else:
                     batch_data.append(col_data[begin: end])
                     batch_mask.append(col_mask)
                     continue
-                else:
-                    col_mask = False
+            assert isinstance(col_mask, bool)
             batch_data.append(col_data[begin: end] if col_mask else None)
             batch_mask.append(col_mask)
 

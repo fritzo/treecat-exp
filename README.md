@@ -1,5 +1,4 @@
 # TreeCat experiments
-# TreeCat experiments
 
 This requires the contrib-treecat branch of Pyro
 https://github.com/pyro-ppl/pyro/pull/1370
