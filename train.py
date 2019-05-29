@@ -68,6 +68,16 @@ class ParamStoreMonitor(object):
                 for name, curr in self.current.items()}
 
 
+def to_cuda(x):
+    if isinstance(x, torch.Tensor):
+        return x.cuda()
+    if isinstance(x, list):
+        return [to_cuda(item) for item in x]
+    if x is None:
+        return x
+    raise ValueError(x)
+
+
 def main(args):
     # Load data.
     features, data, mask = load_data(args)
@@ -92,9 +102,8 @@ def main(args):
     trainer = model.trainer(optim, backend="cpp")
     for batch_data, batch_mask in partition_data(data, mask, args.init_size):
         if args.cuda:
-            batch_data = [col.cuda() for col in batch_data]
-            batch_mask = [col.cuda() if isinstance(col, torch.Tensor) else col
-                          for col in batch_mask]
+            batch_data = to_cuda(batch_data)
+            batch_mask = to_cuda(batch_mask)
         trainer.init(batch_data, batch_mask)
         break
 
@@ -113,9 +122,8 @@ def main(args):
             num_batches = 0
             for batch_data, batch_mask in partition_data(data, mask, args.batch_size):
                 if args.cuda:
-                    batch_data = [col.cuda() for col in batch_data]
-                    batch_mask = [col.cuda() if isinstance(col, torch.Tensor) else col
-                                  for col in batch_mask]
+                    batch_data = to_cuda(batch_data)
+                    batch_mask = to_cuda(batch_mask)
                 loss = trainer.step(batch_data, batch_mask, num_rows=num_rows)
                 loss /= num_cells
                 losses.append(loss)
@@ -137,7 +145,7 @@ if __name__ == "__main__":
     assert pyro.__version__ >= "0.3.3"
     parser = argparse.ArgumentParser(description="TreeCat training")
     parser.add_argument("--dataset", default="boston_housing")
-    parser.add_argument("--max-num-rows", default=1000000000, type=int)
+    parser.add_argument("-r", "--max-num-rows", default=1000000000, type=int)
     parser.add_argument("-m", "--model", default="treecat")
     parser.add_argument("-c", "--capacity", default=8, type=int)
     parser.add_argument("-lr", "--learning-rate", default=0.01, type=float)
