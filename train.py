@@ -99,7 +99,7 @@ def main(args):
     else:
         raise ValueError("Unknown model: {}".format(args.model))
     optim = Adam({"lr": args.learning_rate})
-    trainer = model.trainer(optim, backend="cpp")
+    trainer = model.trainer(optim)
     for batch_data, batch_mask in partition_data(data, mask, args.init_size):
         if args.cuda:
             batch_data = to_cuda(batch_data)
@@ -152,7 +152,7 @@ if __name__ == "__main__":
     parser.add_argument("-ar", "--annealing-rate", default=0.01, type=float)
     parser.add_argument("-n", "--num-epochs", default=200, type=int)
     parser.add_argument("-b", "--batch-size", default=64, type=int)
-    parser.add_argument("-i", "--init-size", default=1024, type=int)
+    parser.add_argument("-i", "--init-size", default=1000000000, type=int)
     parser.add_argument("--seed", default=123456789, type=int)
     parser.add_argument("--cuda", action="store_true")
     parser.add_argument("-v", "--verbose", action="store_true")
