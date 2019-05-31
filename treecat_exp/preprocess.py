@@ -8,7 +8,7 @@ import sys
 from collections import defaultdict
 
 import torch
-from observations import boston_housing
+from pyro.contrib.examples import boston_housing
 from pyro.contrib.tabular import Boolean, Discrete, Real
 from six.moves import cPickle as pickle
 from six.moves import urllib
@@ -35,13 +35,13 @@ def load_boston_housing(args):
     # Convert to torch.
     cache_filename = os.path.join(DATA, "boston_housing.pkl")
     if not os.path.exists(cache_filename):
-        x_train, metadata = boston_housing(DATA)
+        x_train, header = boston_housing.load(DATA)
         x_train = x_train[torch.randperm(len(x_train))]
         x_train = torch.tensor(x_train.T, dtype=torch.get_default_dtype()).contiguous()
         features = []
         data = []
         logging.info("loaded {} rows x {} features:".format(x_train.size(1), x_train.size(0)))
-        for name, column in zip(metadata["columns"], x_train):
+        for name, column in zip(header, x_train):
             ftype = Boolean if name == "CHAS" else Real
             features.append(ftype(name))
             data.append(column)
