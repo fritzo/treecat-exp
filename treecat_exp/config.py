@@ -1,8 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
 import torch
+import logging
 
 DEFAULT_CONFIG = {
+    # These default values were determined by running train.py
+    # and assessing convergence using train.ipynb .
     "treecat": {
         "housing": {
             "capacity": 8,
@@ -33,7 +36,7 @@ DEFAULT_CONFIG = {
             "num_epochs": 2,
         },
     },
-    # TODO add default configs for MIVAE, GAIN, etc.
+    # TODO(jpchen) add default configs for MIVAE, GAIN, etc.
 }
 
 
@@ -49,3 +52,10 @@ def fill_in_defaults(args):
             setattr(args, key, value)
         if torch.cuda.is_available():
             args.cuda = True
+
+    logging.basicConfig(format="%(relativeCreated) 9d %(message)s",
+                        level=logging.DEBUG if args.verbose else logging.INFO)
+    logging.info("\n".join(
+        ["Config:"] +
+        ["\t{} = {}".format(key, value)
+         for (key, value) in sorted(vars(args).items())]))

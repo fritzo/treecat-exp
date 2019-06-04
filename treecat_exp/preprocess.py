@@ -46,7 +46,7 @@ def load_housing(args):
             features.append(ftype(name))
             data.append(column)
         dataset = {
-            "feature": features,
+            "features": features,
             "data": data,
             "args": args,
         }
@@ -56,7 +56,7 @@ def load_housing(args):
         dataset = pickle.load(f)
 
     # Format columns.
-    mask = True
+    mask = [True] * len(dataset["data"])
     return dataset["feature"], dataset["data"], mask
 
 
@@ -103,12 +103,13 @@ def load_census(args):
     # Format columns.
     features = []
     data = []
-    mask = True
+    mask = []
     for j, support in enumerate(dataset["supports"]):
         if len(support) >= 2:
             name = dataset["header"][j]
             features.append(Discrete(name, len(support)))
             data.append(dataset["data"][:, j].long().contiguous())
+            mask.append(True)
     return features, data, mask
 
 
@@ -223,10 +224,11 @@ def load_news(args):
     # Format columns.
     features = []
     data = []
-    mask = True
+    mask = []
     for name, col in zip(dataset["names"], dataset["data"]):
         features.append(NEWS_SCHEMA[name](name))
         data.append(col)
+        mask.append(True)
     return features, data, mask
 
 
@@ -487,8 +489,7 @@ def partition_data(data, mask, target_size):
     Iterates over minibatches of data, attempting to make each minibatch as
     large as possible up to ``target_size``.
     """
-    if mask is True:
-        mask = [True] * len(data)
+    assert len(data) == len(mask)
     num_rows = next(col.size(0) for col in data if col is not None)
 
     begin = 0

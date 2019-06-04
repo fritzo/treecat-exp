@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 import argparse
-import logging
 
 import pyro
 
@@ -27,7 +26,7 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--capacity", default=8, type=int)
     parser.add_argument("-lr", "--learning-rate", default=0.01, type=float)
     parser.add_argument("-ar", "--annealing-rate", default=0.01, type=float)
-    parser.add_argument("-n", "--num-epochs", default=200, type=int)
+    parser.add_argument("-n", "--num-epochs", default=100, type=int)
     parser.add_argument("-b", "--batch-size", default=64, type=int)
     parser.add_argument("-i", "--init-size", default=1000000000, type=int)
     parser.add_argument("--default-config", action="store_true")
@@ -36,13 +35,5 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
     fill_in_defaults(args)
-
-    logging.basicConfig(format="%(relativeCreated) 9d %(message)s",
-                        level=logging.DEBUG if args.verbose else logging.INFO)
-    logging.info("\n".join(
-        ["Config:"] +
-        ["\t{} = {}".format(key, value)
-         for (key, value) in sorted(vars(args).items())]))
-
     with pdb_post_mortem():
         main(args)

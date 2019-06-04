@@ -12,6 +12,7 @@ RAWDATA = os.path.join(ROOT, "rawdata")
 DATA = os.path.join(ROOT, "data")
 RESULTS = os.environ.get("RESULTS", os.path.join(ROOT, "results"))
 TRAIN = os.path.join(RESULTS, "train")
+CLEANUP = os.path.join(RESULTS, "cleanup")
 TEST = os.path.join(RESULTS, "test")
 
 
@@ -20,7 +21,7 @@ def mkdir_p(path):
         os.makedirs(path)
 
 
-for path in [RAWDATA, DATA, TRAIN, TEST]:
+for path in [RAWDATA, DATA, TRAIN, TEST, CLEANUP]:
     mkdir_p(path)
 
 

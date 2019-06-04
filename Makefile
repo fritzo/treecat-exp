@@ -14,6 +14,7 @@ lint: FORCE
 test: FORCE lint dirs
 	rm -rf temp.results.test
 	RESULTS=temp.results.test python train.py -n 1
+	RESULTS=temp.results.test python cleanup.py --custom-config -n 1
 	RESULTS=temp.results.test python evaluate.py
 	@# RESULTS=temp.results.test python eval_predictor.py
 	rm -rf temp.results.test
@@ -35,6 +36,6 @@ results: FORCE
 
 clean: FORCE
 	find . -name '*.pyc' -delete -o -name '*.log' -delete
-	rm -f data/*.pkl results/*
+	rm -rf data/*.pkl results/*
 
 FORCE:

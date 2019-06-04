@@ -126,3 +126,5 @@ def train_treecat(name, features, data, mask, args):
                 stepsizes.append(stepsize)
             logging.info("epoch {} loss = {}".format(epoch, epoch_loss / num_batches))
             save_treecat(name, model, meta, args)
+
+    return model
