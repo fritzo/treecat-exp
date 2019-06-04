@@ -37,7 +37,7 @@ def load_housing(args):
     if not os.path.exists(cache_filename):
         x_train, header = boston_housing.load(DATA)
         x_train = x_train[torch.randperm(len(x_train))]
-        x_train = torch.tensor(x_train.T, dtype=torch.get_default_dtype()).contiguous()
+        x_train = torch.tensor(x_train.t(), dtype=torch.get_default_dtype()).contiguous()
         features = []
         data = []
         logging.info("loaded {} rows x {} features:".format(x_train.size(1), x_train.size(0)))
