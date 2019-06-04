@@ -10,10 +10,9 @@ from collections import defaultdict
 import torch
 from pyro.contrib.examples import boston_housing
 from pyro.contrib.tabular import Boolean, Discrete, Real
-from six.moves import cPickle as pickle
 from six.moves import urllib
 
-from treecat_exp.util import DATA, RAWDATA, mkdir_p
+from treecat_exp.util import DATA, RAWDATA, load_object, mkdir_p, save_object
 
 Count = Discrete  # We currently don't handle count data.
 Text = None  # We currently don't handle text data.
@@ -34,7 +33,9 @@ def load_housing(args):
     """
     # Convert to torch.
     cache_filename = os.path.join(DATA, "housing.pkl")
-    if not os.path.exists(cache_filename):
+    if os.path.exists(cache_filename):
+        dataset = load_object(cache_filename)
+    else:
         x_train, header = boston_housing.load(DATA)
         x_train = x_train[torch.randperm(len(x_train))]
         x_train = x_train.t().to(dtype=torch.get_default_dtype()).contiguous()
@@ -50,10 +51,7 @@ def load_housing(args):
             "data": data,
             "args": args,
         }
-        with open(cache_filename, "wb") as f:
-            pickle.dump(dataset, f, pickle.HIGHEST_PROTOCOL)
-    with open(cache_filename, "rb") as f:
-        dataset = pickle.load(f)
+        save_object(dataset, cache_filename)
 
     # Format columns.
     mask = [True] * len(dataset["data"])
@@ -67,7 +65,9 @@ def load_census(args):
     # Convert to torch.
     num_rows = min(2458285, args.max_num_rows)
     cache_filename = os.path.join(DATA, "census.{}.pkl".format(num_rows))
-    if not os.path.exists(cache_filename):
+    if os.path.exists(cache_filename):
+        dataset = load_object(cache_filename)
+    else:
         raw_filename = os.path.join(RAWDATA, "uci-us-census-1990", "USCensus1990.data.txt")
         if not os.path.exists(raw_filename):
             mkdir_p(os.path.dirname(raw_filename))
@@ -95,10 +95,7 @@ def load_census(args):
             "data": data,
             "args": args,
         }
-        with open(cache_filename, "wb") as f:
-            pickle.dump(dataset, f, pickle.HIGHEST_PROTOCOL)
-    with open(cache_filename, "rb") as f:
-        dataset = pickle.load(f)
+        save_object(dataset, cache_filename)
 
     # Format columns.
     features = []
@@ -182,7 +179,9 @@ def load_news(args):
     # Convert to torch.
     num_rows = min(39644, args.max_num_rows)
     cache_filename = os.path.join(DATA, "news.{}.pkl".format(num_rows))
-    if not os.path.exists(cache_filename):
+    if os.path.exists(cache_filename):
+        dataset = load_object(cache_filename)
+    else:
         raw_dir = os.path.join(RAWDATA, "uci-online-news-popularity")
         raw_filename = os.path.join(raw_dir, "OnlineNewsPopularity.csv")
         if not os.path.exists(raw_filename):
@@ -216,10 +215,7 @@ def load_news(args):
             "data": data,
             "args": args,
         }
-        with open(cache_filename, "wb") as f:
-            pickle.dump(dataset, f, pickle.HIGHEST_PROTOCOL)
-    with open(cache_filename, "rb") as f:
-        dataset = pickle.load(f)
+        save_object(dataset, cache_filename)
 
     # Format columns.
     features = []
@@ -388,7 +384,9 @@ def load_lending(args):
     # Convert to torch.
     num_rows = min(2260668, args.max_num_rows)
     cache_filename = os.path.join(DATA, "lending.{}.pkl".format(num_rows))
-    if not os.path.exists(cache_filename):
+    if os.path.exists(cache_filename):
+        dataset = load_object(cache_filename)
+    else:
         raw_dir = os.path.join(RAWDATA, "kaggle-lending-club")
         raw_filename = os.path.join(raw_dir, "loan.csv")
         if not os.path.exists(raw_filename):
@@ -448,10 +446,7 @@ def load_lending(args):
             "supports": supports,
             "args": args,
         }
-        with open(cache_filename, "wb") as f:
-            pickle.dump(dataset, f, pickle.HIGHEST_PROTOCOL)
-    with open(cache_filename, "rb") as f:
-        dataset = pickle.load(f)
+        save_object(dataset, cache_filename)
 
     # Format columns.
     features = []

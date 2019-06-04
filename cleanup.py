@@ -8,23 +8,20 @@ import pyro
 import torch
 from pyro.contrib.tabular import TreeCat
 from pyro.contrib.tabular.features import Real
-from six.moves import cPickle as pickle
 
 from treecat_exp.config import fill_in_defaults
 from treecat_exp.corruption import corrupt
 from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.training import load_treecat, train_treecat
-from treecat_exp.util import CLEANUP, TEST, pdb_post_mortem, to_cuda
+from treecat_exp.util import CLEANUP, TEST, save_object, load_object, pdb_post_mortem, to_cuda
 
 
 def cleanup(name, features, data, mask, args):
     corrupted_filename = os.path.join(CLEANUP, "{}.corrupted.pkl".format(name))
     cleaned_filename = os.path.join(CLEANUP, "{}.cleaned.pkl".format(name))
     if os.path.exists(cleaned_filename) and os.path.exists(corrupted_filename):
-        with open(corrupted_filename, "rb") as f:
-            corrupted = pickle.load(f)
-        with open(cleaned_filename, "rb") as f:
-            cleaned = pickle.load(f)
+        corrupted = load_object(corrupted_filename)
+        cleaned = load_object(cleaned_filename)
         model = load_treecat(name)
         return corrupted, cleaned, model
 
@@ -34,8 +31,7 @@ def cleanup(name, features, data, mask, args):
                         delete_prob=args.delete_percent / 100.,
                         replace_prob=args.replace_percent / 100.)
     corrupted["args"] = args
-    with open(corrupted_filename, "wb") as f:
-        pickle.dump(corrupted, f, pickle.HIGHEST_PROTOCOL)
+    save_object(corrupted, corrupted_filename)
 
     # Train model on corrupted data.
     logging.debug("Training model on corrupted data")
@@ -65,8 +61,7 @@ def cleanup(name, features, data, mask, args):
         "mask": cleaned_mask,
         "args": args,
     }
-    with open(cleaned_filename, "wb") as f:
-        pickle.dump(cleaned, f, pickle.HIGHEST_PROTOCOL)
+    save_object(cleaned, cleaned_filename)
 
     return corrupted, cleaned, model
 
@@ -117,14 +112,12 @@ def main(args):
             with torch.no_grad():
                 log_prob += (model.log_prob(true_data, true_mask) -
                              model.log_prob(corr_data, corr_mask))
-        num_cells = metrics["num_rows"] * metrics["num_cols"]
-        metrics["posterior_predictive"] = log_prob / num_cells
+        metrics["posterior_predictive"] = log_prob / sum(num_cleaned)
 
     logging.debug("Metrics:")
     for key, value in sorted(metrics.items()):
         logging.debug("{} = {}".format(key, value))
-    with open(os.path.join(TEST, "{}.pkl".format(name)), "wb") as f:
-        pickle.dump(metrics, f, pickle.HIGHEST_PROTOCOL)
+    save_object(metrics, os.path.join(TEST, "{}.pkl".format(name)))
 
 
 if __name__ == "__main__":

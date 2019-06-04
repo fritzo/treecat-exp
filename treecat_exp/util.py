@@ -6,6 +6,7 @@ import sys
 from contextlib import contextmanager
 
 import torch
+from six.moves import cPickle as pickle
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAWDATA = os.path.join(ROOT, "rawdata")
@@ -57,3 +58,14 @@ def to_cuda(x):
     if x in (None, False, True):
         return x
     raise ValueError(x)
+
+
+def save_object(data, path):
+    with open(path, "wb") as f:
+        torch.save(data, f, pickle_module=pickle, pickle_protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def load_object(path):
+    map_location = None if torch.cuda.is_available() else "cpu"
+    with open(path, "rb") as f:
+        return torch.load(f, map_location=map_location, pickle_module=pickle)

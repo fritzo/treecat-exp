@@ -6,12 +6,11 @@ import os
 import sys
 
 import numpy as np
-from six.moves import cPickle as pickle
-
 import pyro
+
 from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.regression import Regressor
-from treecat_exp.util import TEST, TRAIN, pdb_post_mortem
+from treecat_exp.util import TEST, TRAIN, load_object, pdb_post_mortem, save_object
 
 
 def main(args):
@@ -31,8 +30,7 @@ def main(args):
     pyro.enable_validation(__debug__)
     pyro.get_param_store().clear()
     pyro.get_param_store().load(os.path.join(TRAIN, "{}.model.pyro".format(name)))
-    with open(os.path.join(TRAIN, "{}.model.pkl".format(name)), "rb") as f:
-        model = pickle.load(f)
+    model = load_object(os.path.join(TRAIN, "{}.model.pkl".format(name)))
 
     # Split data into train and test.
     batches = list(partition_data(data, args.batch_size))
@@ -68,8 +66,7 @@ def main(args):
     for q, score in scores.items():
         logging.info("score at {:0.3g}: {:0.3g}".format(q, np.mean(score)))
     metrics = {"args": args, "scores": scores, "predictors": predictors}
-    with open(os.path.join(TEST, "{}.eval_predictor.pkl".format(name)), "wb") as f:
-        pickle.dump(metrics, f, pickle.HIGHEST_PROTOCOL)
+    save_object(metrics, os.path.join(TEST, "{}.eval_predictor.pkl".format(name)))
 
 
 if __name__ == "__main__":

@@ -8,10 +8,9 @@ import torch
 from pyro.contrib.tabular import Mixture, TreeCat
 from pyro.contrib.tabular.treecat import print_tree
 from pyro.optim import Adam
-from six.moves import cPickle as pickle
 
 from treecat_exp.preprocess import partition_data
-from treecat_exp.util import TRAIN, interrupt, to_cuda
+from treecat_exp.util import TRAIN, interrupt, load_object, save_object, to_cuda
 
 
 def save_treecat(name, model, meta, args):
@@ -19,10 +18,8 @@ def save_treecat(name, model, meta, args):
     Save model and metadata.
     """
     pyro.get_param_store().save(os.path.join(TRAIN, "{}.model.pyro".format(name)))
-    with open(os.path.join(TRAIN, "{}.model.pkl".format(name)), "wb") as f:
-        pickle.dump(model, f, pickle.HIGHEST_PROTOCOL)
-    with open(os.path.join(TRAIN, "{}.meta.pkl".format(name)), "wb") as f:
-        pickle.dump(meta, f, pickle.HIGHEST_PROTOCOL)
+    save_object(model, os.path.join(TRAIN, "{}.model.pkl".format(name)))
+    save_object(meta, os.path.join(TRAIN, "{}.meta.pkl".format(name)))
     if args.verbose:
         if False:
             torch.set_printoptions(precision=3, linewidth=120)
@@ -41,8 +38,7 @@ def load_treecat(name):
     Load model.
     """
     pyro.get_param_store().load(os.path.join(TRAIN, "{}.model.pyro".format(name)))
-    with open(os.path.join(TRAIN, "{}.model.pkl".format(name)), "rb") as f:
-        model = pickle.load(f)
+    model = load_object(os.path.join(TRAIN, "{}.model.pkl".format(name)))
     return model
 
 
