@@ -37,7 +37,7 @@ def load_housing(args):
     if not os.path.exists(cache_filename):
         x_train, header = boston_housing.load(DATA)
         x_train = x_train[torch.randperm(len(x_train))]
-        x_train = torch.tensor(x_train.t(), dtype=torch.get_default_dtype()).contiguous()
+        x_train = x_train.t().to(dtype=torch.get_default_dtype()).contiguous()
         features = []
         data = []
         logging.info("loaded {} rows x {} features:".format(x_train.size(1), x_train.size(0)))
@@ -57,7 +57,7 @@ def load_housing(args):
 
     # Format columns.
     mask = [True] * len(dataset["data"])
-    return dataset["feature"], dataset["data"], mask
+    return dataset["features"], dataset["data"], mask
 
 
 def load_census(args):
@@ -192,7 +192,7 @@ def load_news(args):
             urllib.request.urlretrieve(
                 "https://archive.ics.uci.edu/ml/machine-learning-databases/00332/OnlineNewsPopularity.zip",
                 zip_filename)
-            subprocess.check_call(["unzip", "-f", zip_filename, "-d", raw_dir])
+            subprocess.check_call(["unzip", "-o", zip_filename, "-d", raw_dir])
             os.rename(os.path.join(raw_dir, "OnlineNewsPopularity", "OnlineNewsPopularity.csv"),
                       os.path.join(raw_dir, "OnlineNewsPopularity.csv"))
 
