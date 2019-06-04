@@ -13,19 +13,20 @@ Please try to `make test` before pushing changes :smile:
 
 [treecat_exp](treecat_exp) is a Python library where stable code lives.
 
-[train.py](train.py) is the main training script for TreeCat models.
+[train.py](train.py) is a training script for TreeCat models.
 To train a dataset run e.g.
 ```sh
 python train.py --dataset census --batch-size 8192 --num-epochs 2 --cuda
 ```
-Training is required before evaluating any model.
+The notebooks
 [train.ipynb](train.ipynb) and
 [debug_feature_init.ipynb](debug_feature_init.ipynb)
-are notebooks to assess training convergence and diagnose issues with initialization.
+serve to assess convergence and diagnose issues with initialization.
 
-[evaluate.py](evaluate.py) and
-[evaluate.ipynb](evaluate.ipynb) evaluate imputation accuracy based on
-posterior predictive probability of true data conditioned on observed data.
+[main.py](main.py) is the main experiment script to compare multiple models.
+
+[cleanup.py](cleanup.py) and
+[cleanup.ipynb](cleanup.ipynb) evaluate imputation accuracy.
 
 [eval_predictor.py](eval_predictor.py) and
 [eval_predictor.ipynb](eval_predictor.ipynb)

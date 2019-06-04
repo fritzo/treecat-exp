@@ -39,7 +39,10 @@ def cleanup(name, features, data, mask, args):
 
     # Train model on corrupted data.
     logging.debug("Training model on corrupted data")
-    model = train_treecat(name, features, corrupted["data"], corrupted["mask"], args)
+    if args.model == "treecat":
+        model = train_treecat(name, features, corrupted["data"], corrupted["mask"], args)
+    else:
+        raise ValueError("Unknown model: {}".format(args.model))
 
     # Clean up data using trained model.
     logging.debug("Cleaning up dataset")
@@ -91,7 +94,7 @@ def main(args):
         else:
             loss = (true_col != cleaned_col).float().mean()
         num_cleaned.append((corrupted["mask"][i] != cleaned["mask"][i]).float().sum().item())
-        losses.append(loss.item() / num_cleaned[-1])
+        losses.append(loss.item() / max(num_cleaned[-1], 1e-20))
     metrics = {
         "losses": losses,
         "num_cleaned": num_cleaned,

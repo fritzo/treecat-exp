@@ -24,12 +24,13 @@ def save_treecat(name, model, meta, args):
     with open(os.path.join(TRAIN, "{}.meta.pkl".format(name)), "wb") as f:
         pickle.dump(meta, f, pickle.HIGHEST_PROTOCOL)
     if args.verbose:
-        torch.set_printoptions(precision=3, linewidth=120)
-        logging.debug("\n".join(
-            ["Param store:", "----------------------------------------"] +
-            ["{} =\n{}".format(key, value.data.cpu())
-             for key, value in sorted(pyro.get_param_store().items())] +
-            ["----------------------------------------"]))
+        if False:
+            torch.set_printoptions(precision=3, linewidth=120)
+            logging.debug("\n".join(
+                ["Param store:", "----------------------------------------"] +
+                ["{} =\n{}".format(key, value.data.cpu())
+                 for key, value in sorted(pyro.get_param_store().items())] +
+                ["----------------------------------------"]))
         feature_names = [f.name for f in model.features]
         if isinstance(model, TreeCat):
             logging.debug("Tree:\n{}".format(print_tree(model.edges, feature_names)))

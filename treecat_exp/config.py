@@ -12,7 +12,7 @@ DEFAULT_CONFIG = {
             "batch_size": 128,
             "learning_rate": 0.01,
             "annealing_rate": 0.01,
-            "num_epochs": 100,
+            "num_epochs": 200,
         },
         "news": {
             "capacity": 8,

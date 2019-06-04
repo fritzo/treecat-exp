@@ -389,7 +389,7 @@ def load_lending(args):
     num_rows = min(2260668, args.max_num_rows)
     cache_filename = os.path.join(DATA, "lending.{}.pkl".format(num_rows))
     if not os.path.exists(cache_filename):
-        raw_dir = os.path.join(RAWDATA, "kaggle-lending-club", "loan.csv")
+        raw_dir = os.path.join(RAWDATA, "kaggle-lending-club")
         raw_filename = os.path.join(raw_dir, "loan.csv")
         if not os.path.exists(raw_filename):
             mkdir_p(raw_dir)
@@ -427,7 +427,7 @@ def load_lending(args):
                     data[i, j] = value
                     mask[i, j] = True
                     cell_count += 1
-                if i % (num_rows // 100) == 0:
+                if i % max(1, num_rows // 100) == 0:
                     sys.stderr.write(".")
                     sys.stderr.flush()
         logging.info("loaded {} rows x {} features".format(data.size(0), data.size(1)))

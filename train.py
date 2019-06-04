@@ -14,7 +14,10 @@ def main(args):
     # Load data.
     features, data, mask = load_data(args)
     name = "{}.{}.{}".format(args.dataset, args.model, args.capacity)
-    train_treecat(name, features, data, mask, args)
+    if args.model == "treecat":
+        train_treecat(name, features, data, mask, args)
+    else:
+        raise ValueError("Unknown model: {}".format(args.model))
 
 
 if __name__ == "__main__":
