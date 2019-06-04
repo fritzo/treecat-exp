@@ -5,6 +5,8 @@ import signal
 import sys
 from contextlib import contextmanager
 
+import torch
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAWDATA = os.path.join(ROOT, "rawdata")
 DATA = os.path.join(ROOT, "data")
@@ -41,3 +43,16 @@ def pdb_post_mortem():
         print(e)
         import pdb
         pdb.post_mortem(e.__traceback__)
+
+
+def to_cuda(x):
+    """
+    Moves Tensors to cuda; returns python objects unmodified.
+    """
+    if isinstance(x, torch.Tensor):
+        return x.cuda()
+    if isinstance(x, list):
+        return [to_cuda(item) for item in x]
+    if x in (None, False, True):
+        return x
+    raise ValueError(x)
