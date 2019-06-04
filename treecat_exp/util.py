@@ -40,7 +40,7 @@ def pdb_post_mortem():
 
     try:
         yield
-    except (ValueError, RuntimeError, AssertionError) as e:
+    except Exception as e:
         print(e)
         import pdb
         pdb.post_mortem(e.__traceback__)

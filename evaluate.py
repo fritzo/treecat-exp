@@ -40,7 +40,6 @@ def main(args):
     # Load a trained model.
     logging.debug("Loading model")
     pyro.set_rng_seed(args.seed)
-    pyro.enable_validation(__debug__)
     pyro.get_param_store().load(os.path.join(TRAIN, "{}.model.pyro".format(name)))
     with open(os.path.join(TRAIN, "{}.model.pkl".format(name)), "rb") as f:
         model = pickle.load(f)
@@ -81,6 +80,8 @@ def main(args):
 
 if __name__ == "__main__":
     assert pyro.__version__ >= "0.3.3"
+    pyro.enable_validation(__debug__)
+
     parser = argparse.ArgumentParser(description="TreeCat evaluation")
     parser.add_argument("--dataset", default="housing")
     parser.add_argument("--max-num-rows", default=9999999999, type=int)

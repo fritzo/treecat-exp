@@ -5,58 +5,67 @@ import logging
 import os
 
 import pyro
+import torch
+from pyro.contrib.tabular import TreeCat
 from pyro.contrib.tabular.features import Real
 from six.moves import cPickle as pickle
 
 from treecat_exp.config import fill_in_defaults
-from treecat_exp.preprocess import load_data, partition_data
-from treecat_exp.training import train_treecat
-from treecat_exp.util import CLEANUP, TEST, pdb_post_mortem, to_cuda
 from treecat_exp.corruption import corrupt
-import torch
+from treecat_exp.preprocess import load_data, partition_data
+from treecat_exp.training import load_treecat, train_treecat
+from treecat_exp.util import CLEANUP, TEST, pdb_post_mortem, to_cuda
 
 
 def cleanup(name, features, data, mask, args):
-    cache_filename = os.path.join(CLEANUP, "{}.pkl".format(name))
-    if os.path.exists(cache_filename):
-        with open(cache_filename, "wb") as f:
-            return pickle.load(f)
+    corrupted_filename = os.path.join(CLEANUP, "{}.corrupted.pkl".format(name))
+    cleaned_filename = os.path.join(CLEANUP, "{}.cleaned.pkl".format(name))
+    if os.path.exists(cleaned_filename) and os.path.exists(corrupted_filename):
+        with open(corrupted_filename, "rb") as f:
+            corrupted = pickle.load(f)
+        with open(cleaned_filename, "rb") as f:
+            cleaned = pickle.load(f)
+        model = load_treecat(name)
+        return corrupted, cleaned, model
 
     # Currupt data.
     logging.debug("Corrupting dataset")
     corrupted = corrupt(data, mask,
                         delete_prob=args.delete_percent / 100.,
                         replace_prob=args.replace_percent / 100.)
+    corrupted["args"] = args
+    with open(corrupted_filename, "wb") as f:
+        pickle.dump(corrupted, f, pickle.HIGHEST_PROTOCOL)
 
     # Train model on corrupted data.
     logging.debug("Training model on corrupted data")
     model = train_treecat(name, features, corrupted["data"], corrupted["mask"], args)
 
-    # Use trained model to clean up data.
+    # Clean up data using trained model.
     logging.debug("Cleaning up dataset")
     cleaned_data = [torch.empty_like(col) for col in data]
     cleaned_mask = [True] * len(cleaned_data)
     begin = 0
-    for batch_data, batch_mask in partition_data(data, mask, args.batch_size):
+    for batch_data, batch_mask in partition_data(corrupted["data"], corrupted["mask"], args.batch_size):
         if args.cuda:
             batch_data = to_cuda(batch_data)
             batch_mask = to_cuda(batch_mask)
-        batch_data = model.sample(batch_data, batch_mask)
+        with torch.no_grad():
+            batch_data = model.sample(batch_data, batch_mask)
         end = begin + len(batch_data[0])
         for cleaned_col, batch_col in zip(cleaned_data, batch_data):
-            cleaned_col[begin:end] = batch_col
+            cleaned_col[begin:end] = batch_col.cpu()
         begin = end
-
-    # Save cleaned data.
-    dataset = {
+    cleaned = {
         "feature": features,
         "data": cleaned_data,
         "mask": cleaned_mask,
         "args": args,
     }
-    with open(cache_filename, "wb") as f:
-        pickle.dump(dataset, f, pickle.HIGHEST_PROTOCOL)
-    return dataset
+    with open(cleaned_filename, "wb") as f:
+        pickle.dump(cleaned, f, pickle.HIGHEST_PROTOCOL)
+
+    return corrupted, cleaned, model
 
 
 def main(args):
@@ -66,11 +75,13 @@ def main(args):
         args.delete_percent, args.replace_percent, args.seed, args.dataset, args.model)
 
     # Corrupt then cleanup data.
-    cleaned = cleanup(name, features, data, mask, args)
+    corrupted, cleaned, model = cleanup(name, features, data, mask, args)
+    pyro.set_rng_seed(args.seed)
 
     # Evaluate loss.
     logging.debug("Evaluating loss")
     losses = []
+    num_cleaned = []
     for i, (true_col, cleaned_col) in enumerate(zip(data, cleaned["data"])):
         if mask[i] is not True:
             true_col = true_col[mask[i]]
@@ -79,14 +90,44 @@ def main(args):
             loss = (true_col - cleaned_col).pow(2).mean() / true_col.std()
         else:
             loss = (true_col != cleaned_col).float().mean()
-        losses.append(loss.item())
-    metrics = {"losses": losses, "args": args}
+        num_cleaned.append((corrupted["mask"][i] != cleaned["mask"][i]).float().sum().item())
+        losses.append(loss.item() / num_cleaned[-1])
+    metrics = {
+        "losses": losses,
+        "num_cleaned": num_cleaned,
+        "num_rows": len(data[0]),
+        "num_cols": len(data),
+        "args": args,
+    }
+
+    # Evaluate posterior predictive likelihood.
+    if isinstance(model, TreeCat):
+        log_prob = 0.
+        true_batches = partition_data(data, mask, args.batch_size)
+        corr_batches = partition_data(corrupted["data"], corrupted["mask"], args.batch_size)
+        for (true_data, true_mask), (corr_data, corr_mask) in zip(true_batches, corr_batches):
+            if args.cuda:
+                true_data = to_cuda(true_data)
+                true_mask = to_cuda(true_mask)
+                corr_data = to_cuda(corr_data)
+                corr_mask = to_cuda(corr_mask)
+            with torch.no_grad():
+                log_prob += (model.log_prob(true_data, true_mask) -
+                             model.log_prob(corr_data, corr_mask))
+        num_cells = metrics["num_rows"] * metrics["num_cols"]
+        metrics["posterior_predictive"] = log_prob / num_cells
+
+    logging.debug("Metrics:")
+    for key, value in sorted(metrics.items()):
+        logging.debug("{} = {}".format(key, value))
     with open(os.path.join(TEST, "{}.pkl".format(name)), "wb") as f:
         pickle.dump(metrics, f, pickle.HIGHEST_PROTOCOL)
 
 
 if __name__ == "__main__":
     assert pyro.__version__ >= "0.3.3"
+    pyro.enable_validation(__debug__)
+
     parser = argparse.ArgumentParser(description="Data cleanup experiment")
     parser.add_argument("--delete-percent", default=50, type=int)
     parser.add_argument("--replace-percent", default=0, type=int)
@@ -107,5 +148,6 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
     fill_in_defaults(args)
+
     with pdb_post_mortem():
         main(args)

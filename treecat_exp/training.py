@@ -15,7 +15,9 @@ from treecat_exp.util import TRAIN, interrupt, to_cuda
 
 
 def save_treecat(name, model, meta, args):
-    # Save model and metadata.
+    """
+    Save model and metadata.
+    """
     pyro.get_param_store().save(os.path.join(TRAIN, "{}.model.pyro".format(name)))
     with open(os.path.join(TRAIN, "{}.model.pkl".format(name)), "wb") as f:
         pickle.dump(model, f, pickle.HIGHEST_PROTOCOL)
@@ -31,6 +33,16 @@ def save_treecat(name, model, meta, args):
         feature_names = [f.name for f in model.features]
         if isinstance(model, TreeCat):
             logging.debug("Tree:\n{}".format(print_tree(model.edges, feature_names)))
+
+
+def load_treecat(name):
+    """
+    Load model.
+    """
+    pyro.get_param_store().load(os.path.join(TRAIN, "{}.model.pyro".format(name)))
+    with open(os.path.join(TRAIN, "{}.model.pkl".format(name)), "rb") as f:
+        model = pickle.load(f)
+    return model
 
 
 class TreeMonitor(object):
@@ -78,7 +90,6 @@ def train_treecat(name, features, data, mask, args):
     logging.debug("Initializing {} model from {} rows".format(args.model, init_size))
     pyro.set_rng_seed(args.seed)
     pyro.get_param_store().clear()
-    pyro.enable_validation(__debug__)
     if args.model == "treecat":
         model = TreeCat(features, args.capacity, annealing_rate=args.annealing_rate)
     elif args.model == "mixture":

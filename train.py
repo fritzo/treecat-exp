@@ -19,6 +19,8 @@ def main(args):
 
 if __name__ == "__main__":
     assert pyro.__version__ >= "0.3.3"
+    pyro.enable_validation(__debug__)
+
     parser = argparse.ArgumentParser(description="TreeCat training")
     parser.add_argument("--dataset", default="housing")
     parser.add_argument("-r", "--max-num-rows", default=1000000000, type=int)
@@ -35,5 +37,6 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
     fill_in_defaults(args)
+
     with pdb_post_mortem():
         main(args)
