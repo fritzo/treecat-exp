@@ -51,6 +51,7 @@ Potential experiments:
     For each dataset:
         For each density in [0.1, 0.2, 0.5, 0.8, 0.9]:
             Randomly remove some density of data (per cell).
+            (Note take care to avoid removing entire rows)
             For each algorithm in [treecat, crosscat, VAE, GAN, deterministic]:
                 1. impute missing cells; evaluate L1 or L2 loss
                 2. evaluate posterior preditive likelihood of missing values
@@ -68,7 +69,7 @@ Potential experiments:
                 2. "Clean up" the data and eval L1 or L2 loss wrt truth.
     ```
 -   Training a downstream ML algorithm after cleanup.
-    Cleanup means (a) imputing missing fields and (b)removing outlying cells.
+    Cleanup means (a) imputing missing fields and (b) denoising / outlier removal.
     ```
     For each dataset:
         For each density in [0.1, ..., 0.9]:
@@ -80,7 +81,7 @@ Potential experiments:
                 Replace all cells with "denoised" version.
                 For each column:
                     For each fully-supervised algorithm in
-                       [logistic reg., linear reg., xgboost, DL?]:
+                       [logistic reg., linear reg., xgboost, SVM]:
                        train algo on dirt vs cleaned dataset.
                        Compare trained model on test datset.
     ```
@@ -94,6 +95,12 @@ Potential experiments:
                 2. Add those cells to data (true values).
                 3. impute remaining cells; evaluate L1 or L2 loss
                 4. evaluate posterior preditive likelihood of missing values
+    ```
+- Qualitative structure comparison.
+    ```
+    Pick a representative dataset, e.g. lending club.
+    For each algorithm in [treecat, crosscat]:
+        Discuss the learned latent structure
     ```
 
 [evaluate.py](evaluate.py) and
