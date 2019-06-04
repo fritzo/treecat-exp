@@ -6,11 +6,12 @@ import os
 import sys
 
 import numpy as np
+import pyro
 import torch
+from pyro.infer import TraceEnum_ELBO
 from six.moves import cPickle as pickle
 
-import pyro
-from pyro.infer import TraceEnum_ELBO
+from treecat_exp.corruption import corrupt
 from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.util import TEST, TRAIN, interrupt, pdb_post_mortem
 
@@ -64,18 +65,13 @@ def main(args):
         for batch_data, batch_mask in partition_data(data, mask, args.batch_size):
             full_loss = loss_fn(batch_data, batch_mask)
             for q in quantiles:
-                while True:
-                    extra_mask = torch.distributions.Bernoulli(q).sample((len(batch_data),))
-                    if extra_mask.sum() >= 1 and (1 - extra_mask).sum() >= 1:
-                        break
-                masked_batch = [col if m else None for (col, m) in zip(batch_data, extra_mask)]
-                masked_mask = [col if m else False for (col, m) in zip(batch_mask, extra_mask)]
-                masked_loss = loss_fn(masked_batch, masked_mask)
-                num_imputed_cells = len(batch_data[0]) * (1 - extra_mask).sum().item()
-                loss = (full_loss - masked_loss) / num_imputed_cells
+                corrupted = corrupt(batch_data, batch_mask, delete_prob=q)
+                corrupted_loss = loss_fn(corrupted["data"], corrupted["mask"])
+                num_imputed_cells = len(batch_data[0]) * corrupted["delete_mask"].float().sum().item()
+                loss = (full_loss - corrupted_loss) / num_imputed_cells
                 assert loss > 0
                 losses[q].append(loss)
-                masks[q].append(extra_mask)
+                masks[q].append(corrupted["delete_mask"])
             if args.verbose:
                 sys.stdout.write(".")
                 sys.stdout.flush()

@@ -6,6 +6,32 @@ https://github.com/pyro-ppl/pyro/pull/1370
 See paper at
 https://github.com/fritzo/treecat-paper
 
+## File organization
+
+[Makefile](Makefile) contains convenience commands.
+Please try to `make test` before pushing changes :smile:
+
+[treecat_exp](treecat_exp) is a Python library where stable code lives.
+
+[train.py](train.py) is the main training script for TreeCat models.
+To train a dataset run e.g.
+```sh
+python train.py --dataset census --batch-size 8192 --num-epochs 2 --cuda
+```
+Training is required before evaluating any model.
+[train.ipynb](train.ipynb) and
+[debug_feature_init.ipynb](debug_feature_init.ipynb)
+are notebooks to assess training convergence and diagnose issues with initialization.
+
+[evaluate.py](evaluate.py) and
+[evaluate.ipynb](evaluate.ipynb) evaluate imputation accuracy based on
+posterior predictive probability of true data conditioned on observed data.
+
+[eval_predictor.py](eval_predictor.py) and
+[eval_predictor.ipynb](eval_predictor.ipynb)
+evaluate the accuracy of a downstream logistic regression model that is trained on
+imputed data with various amounts of completely random missingness.
+
 ## Datasets
 
 [treecat_exp/preprocess.py](treecat_exp/preprocess.py)
@@ -102,30 +128,3 @@ Potential experiments:
     For each algorithm in [treecat, crosscat]:
         Discuss the learned latent structure
     ```
-
-[evaluate.py](evaluate.py) and
-[evaluate.ipynb](evaluate.ipynb) evaluate imputation accuracy based on
-posterior predictive probability of true data conditioned on observed data.
-
-[eval_predictor.py](eval_predictor.py) and
-[eval_predictor.ipynb](eval_predictor.ipynb)
-evaluate the accuracy of a downstream logistic regression model that is trained on
-imputed data with various amounts of completely random missingness.
-
-## Training
-
-[train.py](train.py) is the main training script for TreeCat models.
-To train a dataset run e.g.
-```sh
-python train.py --dataset census --batch-size 8192 --num-epochs 2 --cuda
-```
-Training is required before evaluating any model.
-
-[train.ipynb](train.ipynb) and
-[debug_feature_init.ipynb](debug_feature_init.ipynb)
-are notebooks to assess training convergence and diagnose issues with initialization.
-
-## Testing
-
-[Makefile](Makefile) contains convenience commands.
-Please try to `make test` before pushing changes :smile:
