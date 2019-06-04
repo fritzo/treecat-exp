@@ -5,9 +5,10 @@ import logging
 
 import pyro
 
+from treecat_exp.config import fill_in_defaults
 from treecat_exp.preprocess import load_data
-from treecat_exp.util import pdb_post_mortem
 from treecat_exp.training import train_treecat
+from treecat_exp.util import pdb_post_mortem
 
 
 def main(args):
@@ -20,7 +21,7 @@ def main(args):
 if __name__ == "__main__":
     assert pyro.__version__ >= "0.3.3"
     parser = argparse.ArgumentParser(description="TreeCat training")
-    parser.add_argument("--dataset", default="boston_housing")
+    parser.add_argument("--dataset", default="housing")
     parser.add_argument("-r", "--max-num-rows", default=1000000000, type=int)
     parser.add_argument("-m", "--model", default="treecat")
     parser.add_argument("-c", "--capacity", default=8, type=int)
@@ -29,10 +30,12 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--num-epochs", default=200, type=int)
     parser.add_argument("-b", "--batch-size", default=64, type=int)
     parser.add_argument("-i", "--init-size", default=1000000000, type=int)
+    parser.add_argument("--default-config", action="store_true")
     parser.add_argument("--seed", default=123456789, type=int)
     parser.add_argument("--cuda", action="store_true")
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
+    fill_in_defaults(args)
 
     logging.basicConfig(format="%(relativeCreated) 9d %(message)s",
                         level=logging.DEBUG if args.verbose else logging.INFO)

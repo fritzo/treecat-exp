@@ -25,7 +25,7 @@ def load_data(args):
     return globals()[name](args)
 
 
-def load_boston_housing(args):
+def load_housing(args):
     """
     See any of the following:
     http://lib.stat.cmu.edu/datasets/boston
@@ -33,7 +33,7 @@ def load_boston_housing(args):
     https://github.com/edwardlib/observations/blob/master/observations/boston_housing.py
     """
     # Convert to torch.
-    cache_filename = os.path.join(DATA, "boston_housing.pkl")
+    cache_filename = os.path.join(DATA, "housing.pkl")
     if not os.path.exists(cache_filename):
         x_train, header = boston_housing.load(DATA)
         x_train = x_train[torch.randperm(len(x_train))]

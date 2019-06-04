@@ -74,7 +74,8 @@ def train_treecat(name, features, data, mask, args):
     logging.debug("\n".join(["Features:"] + [str(f) for f in features]))
 
     # Initialize the model.
-    logging.debug("Initializing {} model from {} rows".format(args.model, args.init_size))
+    init_size = min(num_rows, args.init_size)
+    logging.debug("Initializing {} model from {} rows".format(args.model, init_size))
     pyro.set_rng_seed(args.seed)
     pyro.get_param_store().clear()
     pyro.enable_validation(__debug__)
@@ -86,7 +87,7 @@ def train_treecat(name, features, data, mask, args):
         raise ValueError("Unknown model: {}".format(args.model))
     optim = Adam({"lr": args.learning_rate})
     trainer = model.trainer(optim)
-    for batch_data, batch_mask in partition_data(data, mask, args.init_size):
+    for batch_data, batch_mask in partition_data(data, mask, init_size):
         if args.cuda:
             batch_data = to_cuda(batch_data)
             batch_mask = to_cuda(batch_mask)

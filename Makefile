@@ -20,10 +20,10 @@ test: FORCE lint dirs
 	@echo PASS
 
 results: FORCE
-	python train.py --dataset boston_housing -b 64 -n 100 -c 2
-	python train.py --dataset boston_housing -b 64 -n 100 -c 4
-	python train.py --dataset boston_housing -b 64 -n 100 -c 8
-	python train.py --dataset boston_housing -b 64 -n 100 -c 16
+	python train.py --dataset housing -b 64 -n 100 -c 2
+	python train.py --dataset housing -b 64 -n 100 -c 4
+	python train.py --dataset housing -b 64 -n 100 -c 8
+	python train.py --dataset housing -b 64 -n 100 -c 16
 	python train.py --dataset news -b 512 -n 20 -c 2
 	python train.py --dataset news -b 512 -n 20 -c 4
 	python train.py --dataset news -b 512 -n 20 -c 8

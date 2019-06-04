@@ -75,7 +75,7 @@ def main(args):
 if __name__ == "__main__":
     assert pyro.__version__ >= "0.3.3"
     parser = argparse.ArgumentParser(description="TreeCat evaluation of prediction")
-    parser.add_argument("--dataset", default="boston_housing")
+    parser.add_argument("--dataset", default="housing")
     parser.add_argument("--feature_to_predict", default=0, type=int)
     parser.add_argument("--max-num-rows", default=9999999999, type=int)
     parser.add_argument("--max-num-batches", default=9999999999, type=int)
