@@ -178,5 +178,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     fill_in_defaults(args)
 
+    if args.model == "fancy":
+        args.cuda = False
+
     with pdb_post_mortem():
         main(args)

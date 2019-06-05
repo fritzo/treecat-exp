@@ -52,15 +52,19 @@ DEFAULT_CONFIG = {
     "fancy": {
         "housing": {
             "batch_size": 10000,
+            "cuda": False,
         },
         "news": {
             "batch_size": 10000,
+            "cuda": False,
         },
         "census": {
             "batch_size": 10000,
+            "cuda": False,
         },
         "lending": {
             "batch_size": 10000,
+            "cuda": False,
         },
     },
 }
