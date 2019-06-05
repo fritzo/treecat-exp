@@ -61,10 +61,10 @@ def to_dense(data, mask):
         if not m:
             # fill missing data with std noise
             # TODO scale noise appropriately
-            data[i] = torch.randn(batch_size)
-            mask[i] = torch.zeros(batch_size, dtype=torch.uint8)
+            data[i] = torch.randn(batch_size, device=data[0].device)
+            mask[i] = torch.zeros(batch_size, dtype=torch.uint8, device=data[0].device)
         else:
-            mask[i] = torch.ones(batch_size, dtype=torch.uint8)
+            mask[i] = torch.ones(batch_size, dtype=torch.uint8, device=data[0].device)
     data = torch.stack([x.float() for x in data], -1)
     mask = torch.stack([x.float() for x in mask], -1)
     return data, mask

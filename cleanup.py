@@ -14,7 +14,7 @@ from treecat_exp.corruption import corrupt
 from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.training import load_treecat, train_treecat
 from treecat_exp.util import CLEANUP, TEST, save_object, load_object, pdb_post_mortem, to_cuda
-from vae.vae import train_vae, load_vae
+from vae.vae import train_vae, load_vae, impute
 
 
 def cleanup(name, features, data, mask, args):
@@ -25,7 +25,7 @@ def cleanup(name, features, data, mask, args):
         cleaned = load_object(cleaned_filename)
         if args.model == "treecat":
             model = load_treecat(name)
-        elif args.model == "vae":
+        elif args.model == "vae" or args.model == "vae_iter_impute":
             model = load_vae(name)
         else:
             raise ValueError("Unknown model: {}".format(args.model))
@@ -46,6 +46,10 @@ def cleanup(name, features, data, mask, args):
         model = train_treecat(name, features, corrupted["data"], corrupted["mask"], args)
     elif args.model == "vae":
         model = train_vae(name, features, corrupted["data"], corrupted["mask"], args)
+    elif args.model == "vae_iter_impute":
+        train_vae(name, features, corrupted["data"], corrupted["mask"], args)
+        # right now this using the train data, as opposed to a held out dataset
+        model = impute(name, corrupted["data"], corrupted["mask"], args)
     else:
         raise ValueError("Unknown model: {}".format(args.model))
 
@@ -145,12 +149,12 @@ if __name__ == "__main__":
     parser.add_argument("--replace-percent", default=0, type=int)
     parser.add_argument("--dataset", default="housing")
     parser.add_argument("-r", "--max-num-rows", default=1000000000, type=int)
-    parser.add_argument("-m", "--model", default="treecat")
+    parser.add_argument("-m", "--model", default="treecat", help="{treecat, vae, vae_iter_impute}")
     parser.add_argument('--default-config', dest='default_config', action='store_true')
     parser.add_argument('--custom-config', dest='default_config', action='store_false')
     parser.set_defaults(default_config=True)
     parser.add_argument("--seed", default=123456789, type=int)
-    parser.add_argument("--cuda", action="store_true")
+    parser.add_argument("--cuda", action="store_true", default=False)
     parser.add_argument("-v", "--verbose", action="store_true")
 
     # Treecat configs
@@ -169,6 +173,7 @@ if __name__ == "__main__":
     parser.add_argument("-nlr", "--noise-lr", default=0.001, type=float,
                         help="noise lr (for iterative imputation)")
     parser.add_argument("-l", "--logging-interval", default=10, type=int)
+    parser.add_argument("--tolerance", default=0.001, type=float, help="tolerance for iterative imputation")
 
     args = parser.parse_args()
     fill_in_defaults(args)
