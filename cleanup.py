@@ -7,7 +7,7 @@ import os
 import pyro
 import torch
 from pyro.contrib.tabular import TreeCat
-from pyro.contrib.tabular.features import Real
+from pyro.contrib.tabular.features import Real, Boolean, Discrete
 
 from treecat_exp.config import fill_in_defaults
 from treecat_exp.corruption import corrupt
@@ -96,8 +96,10 @@ def main(args):
             cleaned_col = cleaned_col[mask[i]]
         if isinstance(features[i], Real):
             loss = (true_col - cleaned_col).pow(2).mean() / true_col.std()
-        else:
+        elif isinstance(features[i], (Boolean, Discrete)):
             loss = (true_col != cleaned_col).float().mean()
+        else:
+            raise ValueError("Unsupported feature type: {}".format(type(features[i])))
         num_cleaned.append((corrupted["mask"][i] != cleaned["mask"][i]).float().sum().item())
         losses.append(loss.item() / max(num_cleaned[-1], 1e-20))
     metrics = {
@@ -109,8 +111,9 @@ def main(args):
     }
 
     # Evaluate posterior predictive likelihood.
-    if isinstance(model, TreeCat):
-        log_prob = 0.
+    # Try to ensure all models support a .log_prob() method for density evaluation.
+    if hasattr(model, "log_prob"):
+        log_probs = []
         true_batches = partition_data(data, mask, args.batch_size)
         corr_batches = partition_data(corrupted["data"], corrupted["mask"], args.batch_size)
         for (true_data, true_mask), (corr_data, corr_mask) in zip(true_batches, corr_batches):
@@ -120,10 +123,12 @@ def main(args):
                 corr_data = to_cuda(corr_data)
                 corr_mask = to_cuda(corr_mask)
             with torch.no_grad():
-                # TODO(jpchen) Ensure all models support a .log_prob() method for density.
-                log_prob += (model.log_prob(true_data, true_mask) -
-                             model.log_prob(corr_data, corr_mask))
-        metrics["posterior_predictive"] = log_prob / sum(num_cleaned)
+                # Compute posterior predictive as conditional probability:
+                # log p(imputed | observed) = log p(imputed, observed) - log p(observed)
+                log_prob = (model.log_prob(true_data, true_mask) -
+                            model.log_prob(corr_data, corr_mask))
+            log_probs.append(log_prob.detach().cpu())
+        metrics["posterior_predictive"] = torch.cat(log_probs)
 
     logging.debug("Metrics:")
     for key, value in sorted(metrics.items()):

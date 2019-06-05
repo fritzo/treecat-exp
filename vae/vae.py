@@ -156,7 +156,7 @@ class VAEModel(object):
         masked_data = data * mask + (1. - mask) * torch.randn(data.shape, device=mask.device)
         z, mu, log_var = self.vae.encoder(masked_data)
         # TODO: correct?
-        return torch.distributions.Normal(mu, (log_var / 2).exp()).log_prob(z).sum()
+        return torch.distributions.Normal(mu, (log_var / 2).exp()).log_prob(z).sum(-1)
 
 
 def train_vae(name, features, data, mask, args):

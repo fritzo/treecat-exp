@@ -37,7 +37,9 @@ def load_treecat(name):
     """
     Load model.
     """
-    pyro.get_param_store().load(os.path.join(TRAIN, "{}.model.pyro".format(name)))
+    map_location = None if torch.cuda.is_available() else "cpu"
+    pyro.get_param_store().load(os.path.join(TRAIN, "{}.model.pyro".format(name)),
+                                map_location=map_location)
     model = load_object(os.path.join(TRAIN, "{}.model.pkl".format(name)))
     return model
 
