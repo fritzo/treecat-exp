@@ -14,7 +14,7 @@ from treecat_exp.corruption import corrupt
 from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.training import load_treecat, train_treecat
 from treecat_exp.util import CLEANUP, TEST, save_object, load_object, pdb_post_mortem, to_cuda
-from vae.vae import train_vae
+from vae.vae import train_vae, load_vae
 
 
 def cleanup(name, features, data, mask, args):
@@ -23,7 +23,12 @@ def cleanup(name, features, data, mask, args):
     if os.path.exists(cleaned_filename) and os.path.exists(corrupted_filename):
         corrupted = load_object(corrupted_filename)
         cleaned = load_object(cleaned_filename)
-        model = load_treecat(name)
+        if args.model == "treecat":
+            model = load_treecat(name)
+        elif args.model == "vae":
+            model = load_vae(name)
+        else:
+            raise ValueError("Unknown model: {}".format(args.model))
         return corrupted, cleaned, model
 
     # Currupt data.

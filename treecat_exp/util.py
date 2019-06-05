@@ -47,6 +47,29 @@ def pdb_post_mortem():
         pdb.post_mortem(e.__traceback__)
 
 
+def to_dense(data, mask):
+    """
+    Takes list of data and list of masks of types: torch.Tensor, None, boolean
+    and returns (torch.Tensor, torch.Tensor)
+    """
+    data = list(data)
+    mask = list(mask)
+    batch_size = next(len(c) for c in data if c is not None)
+    for i, m in enumerate(mask):
+        if isinstance(m, torch.Tensor):
+            continue
+        if not m:
+            # fill missing data with std noise
+            # TODO scale noise appropriately
+            data[i] = torch.randn(batch_size)
+            mask[i] = torch.zeros(batch_size, dtype=torch.uint8)
+        else:
+            mask[i] = torch.ones(batch_size, dtype=torch.uint8)
+    data = torch.stack([x.float() for x in data], -1)
+    mask = torch.stack([x.float() for x in mask], -1)
+    return data, mask
+
+
 def to_cuda(x):
     """
     Moves Tensors to cuda; returns python objects unmodified.

@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import os
 import argparse
 import logging
 
@@ -9,7 +10,7 @@ from torch.optim import Adam
 from torch.nn import MSELoss
 
 from treecat_exp.preprocess import load_data, partition_data
-from treecat_exp.util import TRAIN, interrupt, pdb_post_mortem
+from treecat_exp.util import TRAIN, interrupt, pdb_post_mortem, save_object, load_object, to_dense
 from vae.util import to_cuda, reconstruction_loss_function
 from vae.multi import MultiOutput, SingleOutput, MultiInput
 
@@ -143,16 +144,15 @@ class VAEModel(object):
         self.vae = vae
 
     def sample(self, data, mask):
-        data = torch.stack(data, -1).float()
-        mask = torch.stack(mask, -1).float()
+        data, mask = to_dense(data, mask)
         # TODO scale noise appropriately
         masked_data = data * mask + (1. - mask) * torch.randn(data.shape, device=mask.device)
         out = self.vae(masked_data)
-        return out[1]  # reconstruction
+        reconstruction = out[1]
+        return list(reconstruction.t())
 
     def log_prob(self, data, mask):
-        data = torch.stack(data, -1).float()
-        mask = torch.stack(mask, -1).float()
+        data, mask = to_dense(data, mask)
         masked_data = data * mask + (1. - mask) * torch.randn(data.shape, device=mask.device)
         z, mu, log_var = self.vae.encoder(masked_data)
         # TODO: correct?
@@ -166,7 +166,6 @@ def train_vae(name, features, data, mask, args):
     else:
         vae = VAE(len(features), args.hidden_dim, [700, 128], [700, len(features)])
     if args.cuda:
-        torch.set_default_tensor_type('torch.cuda.FloatTensor')
         vae.cuda()
     optim = Adam(vae.parameters(), lr=args.learning_rate)
     losses = []
@@ -174,23 +173,11 @@ def train_vae(name, features, data, mask, args):
         epoch_loss = 0
         num_batches = 0
         for batch_data, batch_mask in partition_data(data, mask, args.batch_size):
-            optim.zero_grad()
+            # preprocessing the data (TODO move this to preprocess.py)
+            batch_data, batch_mask = to_dense(batch_data, batch_mask)
             if args.cuda and torch.cuda.is_available():
                 batch_data = to_cuda(batch_data)
                 batch_mask = to_cuda(batch_mask)
-            # preprocessing the data (TODO move this to preprocess.py)
-            for i, m in enumerate(batch_mask):
-                if isinstance(m, torch.Tensor):
-                    continue
-                if not m:
-                    # fill missing data with std noise
-                    # TODO scale noise appropriately
-                    batch_data[i] = torch.randn(args.batch_size)
-                    batch_mask[i] = torch.zeros(args.batch_size)
-                else:
-                    batch_mask[i] = torch.ones(args.batch_size)
-            batch_data = [torch.stack([x.float() for x in batch_data], -1)][0]
-            batch_mask = [torch.stack([x.float() for x in batch_mask], -1)][0]
             _, reconstructed, mu, log_var = vae(batch_data)
             # reconstruction loss + KLD
             reconstruction_loss = reconstruction_loss_function(batch_mask * reconstructed.clamp(min=0., max=1.),
@@ -208,9 +195,15 @@ def train_vae(name, features, data, mask, args):
             if i % args.logging_interval == 0:
                 logging.info('[batch {}/{}]: loss = {}'
                              .format((num_batches * args.batch_size),
-                                     data.shape[0],
+                                     data[0].shape[0],
                                      epoch_loss))
-    return VAEModel(vae)
+    model = VAEModel(vae)
+    save_object(model, os.path.join(TRAIN, "{}.model.pkl".format(name)))
+    return model
+
+
+def load_vae(name):
+    return load_object(os.path.join(TRAIN, "{}.model.pkl".format(name)))
 
 
 if __name__ == "__main__":

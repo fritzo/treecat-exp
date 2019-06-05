@@ -29,7 +29,8 @@ def cleanup(model, dataset, delete_percent, args):
 
 def main(args):
     # Run cleanup experiment.
-    models = ["treecat"]  # TODO(jpchen) add vae etc.
+    models = ["treecat", "vae"]  # TODO(jpchen) add vae etc.
+    models = ["vae"]  # TODO(jpchen) add vae etc.
     datasets = ["housing", "news", "census", "lending"]
     delete_percents = [10] if args.smoketest else [10, 20, 33, 50, 67, 80, 90]
     configs = list(itertools.product(models, datasets, delete_percents))
