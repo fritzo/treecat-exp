@@ -6,6 +6,7 @@ import logging
 import torch
 import torch.nn as nn
 from torch.optim import Adam
+from torch.nn import MSELoss
 
 from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.util import TRAIN, interrupt, pdb_post_mortem
@@ -93,7 +94,51 @@ class VAE(nn.Module):
         return z, reconstructed, mu, log_var
 
 
-def main(args):
+def impute(args):
+    vae, features, mask = None, None, None
+    loss_function = MSELoss()
+    inverted_mask = 1 - mask
+    observed = features * mask
+    missing = torch.randn_like(features)
+
+    if args.noise_lr is not None:
+        missing = torch.randn_like(features, requires_grad=True)
+        optim = Adam([missing], weight_decay=0, lr=args.noise_lr)
+
+    vae.train(mode=True)
+
+    for iteration in range(args.num_epochs):
+        if args.noise_lr is not None:
+            optim.zero_grad()
+
+        noisy_features = observed + missing * inverted_mask
+        _, reconstructed, _, _ = vae(noisy_features, training=True)
+
+        observed_loss = reconstruction_loss_function(mask * reconstructed.clamp(min=0., max=1.),
+                                                     mask * features.clamp(min=0., max=1.),
+                                                     None,  # multioutput
+                                                     reduction="sum") / torch.sum(mask)
+        missing_loss = reconstruction_loss_function(inverted_mask * reconstructed.clamp(min=0., max=1.),
+                                                    inverted_mask * features.clamp(min=0., max=1.),
+                                                    None,  # multioutput
+                                                    reduction="sum") / torch.sum(mask)
+
+        masked = mask * features + (1. - mask) * reconstructed
+        loss = torch.sqrt(loss_function(masked, features))
+
+        if args.noise_lr is None:
+            missing = reconstructed * inverted_mask
+        else:
+            observed_loss.backward()
+            optim.step()
+
+        if observed_loss < args.tolerance:
+            break
+
+        return observed_loss, missing_loss, loss
+
+
+def train(args):
     torch.manual_seed(1)
     # Load data.
     features, data, mask = load_data(args)
@@ -161,10 +206,13 @@ if __name__ == "__main__":
     parser.add_argument("--max-num-rows", default=9999999999, type=int)
     parser.add_argument("--iterative", action="store_true", default=False, help="iterative imputation")
     parser.add_argument("-lr", "--learning-rate", default=0.01, type=float)
+    parser.add_argument("-nlr", "--noise-lr", default=0.001, type=float, help="noise lr (for iterative imputation)")
+    parser.add_argument("--tolerance", default=0.001, type=float, help="tolerance for iterative imputation")
     parser.add_argument("-n", "--num-epochs", default=200, type=int)
     parser.add_argument("-b", "--batch-size", default=64, type=int)
     parser.add_argument("--hidden-dim", default=128, type=int)
     parser.add_argument("--cuda", action="store_true", default=False)
+    parser.add_argument("--impute", action="store_true", default=False)
     parser.add_argument("--multi", action="store_true", default=False,
                         help="whether to use multi input/output per Camino et al (2018)")
     parser.add_argument("-i", "--init-size", default=1000000000, type=int)
@@ -173,4 +221,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     logging.basicConfig(format="%(relativeCreated) 9d %(message)s",
                         level=logging.DEBUG if args.verbose else logging.INFO)
-    main(args)
+    train(args)
+    if args.impute:
+        impute(args)
