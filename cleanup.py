@@ -100,9 +100,9 @@ def main(args):
             true_col = true_col[mask[i]]
             cleaned_col = cleaned_col[mask[i]]
         if isinstance(features[i], Real):
-            loss = (true_col - cleaned_col).pow(2).mean() / true_col.std()
+            loss = (true_col - cleaned_col).pow(2).sum() / true_col.std()
         elif isinstance(features[i], (Boolean, Discrete)):
-            loss = (true_col != cleaned_col).float().mean()
+            loss = (true_col != cleaned_col).float().sum()
         else:
             raise ValueError("Unsupported feature type: {}".format(type(features[i])))
         num_cleaned.append((corrupted["mask"][i] != cleaned["mask"][i]).float().sum().item())
