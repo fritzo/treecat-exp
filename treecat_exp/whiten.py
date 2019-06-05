@@ -20,7 +20,7 @@ class Whitener(object):
         whitened_data = []
 
         for d, m, s in zip(data, mask, self.stats):
-            if s is not None:
+            if d is not None and s is not None:
                 mean, std = s
                 d = (d - mean) / std
             whitened_data.append(d)
@@ -31,7 +31,7 @@ class Whitener(object):
         unwhitened_data = []
 
         for d, m, s in zip(data, mask, self.stats):
-            if s is not None:
+            if d is not None and s is not None:
                 mean, std = s
                 d = std * d + mean
             unwhitened_data.append(d)

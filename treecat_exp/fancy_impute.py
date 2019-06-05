@@ -17,15 +17,15 @@ class FancyImputer(object):
     """
     n_iter: number of iterations to do IterativeImputer
     """
-    def __init__(self, features, method="IterativeImputer", n_iter=10):
+    def __init__(self, features, data, mask, method="IterativeImputer", n_iter=10):
         self.features = features
+        self.whitener = Whitener(self.features, data, mask)
         self.method = method
         self.n_iter = n_iter
         assert method in ['IterativeImputer']
 
     def sample(self, data, mask):
-        whitener = Whitener(self.features, data, mask)
-        data = whitener.whiten(data, mask)
+        data = self.whitener.whiten(data, mask)
 
         data, tensor_mask = to_dense(data, mask)
 
@@ -39,13 +39,14 @@ class FancyImputer(object):
         imputed_data = torch.from_numpy(ii.fit_transform(data)).t()
         imputed_data = [imputed_data[col] for col in range(imputed_data.size(0))]
 
-        imputed_data = whitener.unwhiten(imputed_data, mask)
+        imputed_data = self.whitener.unwhiten(imputed_data, mask)
 
         return imputed_data
 
 
 def train_fancy_imputer(name, features, data, mask, args):
-    model = FancyImputer(features, method=args.fancy_method, n_iter=args.fancy_n_iter)
+    model = FancyImputer(features, data, mask,
+                         method=args.fancy_method, n_iter=args.fancy_n_iter)
     save_object(model, os.path.join(TRAIN, "{}.model.pkl".format(name)))
     return model
 
