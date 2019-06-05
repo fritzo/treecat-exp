@@ -111,7 +111,9 @@ def main(args):
     }
 
     # Evaluate posterior predictive likelihood.
-    if hasattr(model, "log_prob"):
+    # Try to ensure all models support a .log_prob() method for density evaluation.
+    # if hasattr(model, "log_prob"):
+    if False:  # FIXME .log_prob() changed semantics.
         log_prob = 0.
         true_batches = partition_data(data, mask, args.batch_size)
         corr_batches = partition_data(corrupted["data"], corrupted["mask"], args.batch_size)
@@ -122,7 +124,8 @@ def main(args):
                 corr_data = to_cuda(corr_data)
                 corr_mask = to_cuda(corr_mask)
             with torch.no_grad():
-                # TODO(jpchen) Ensure all models support a .log_prob() method for density.
+                # Compute posterior predictive as conditional probability:
+                # log p(imputed | observed) = log p(imputed, observed) - log p(observed)
                 log_prob += (model.log_prob(true_data, true_mask) -
                              model.log_prob(corr_data, corr_mask))
         metrics["posterior_predictive"] = log_prob / sum(num_cleaned)
