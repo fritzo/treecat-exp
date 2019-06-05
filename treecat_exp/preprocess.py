@@ -32,12 +32,14 @@ def load_housing(args):
     https://github.com/edwardlib/observations/blob/master/observations/boston_housing.py
     """
     # Convert to torch.
-    cache_filename = os.path.join(DATA, "housing.pkl")
+    num_rows = min(506, args.max_num_rows)
+    cache_filename = os.path.join(DATA, "housing.{}.pkl".format(num_rows))
     if os.path.exists(cache_filename):
         dataset = load_object(cache_filename)
     else:
         x_train, header = boston_housing.load(DATA)
         x_train = x_train[torch.randperm(len(x_train))]
+        x_train = x_train[:num_rows]
         x_train = x_train.t().to(dtype=torch.get_default_dtype()).contiguous()
         features = []
         data = []

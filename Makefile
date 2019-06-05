@@ -28,4 +28,7 @@ clean: FORCE
 	find . -name '*.pyc' -delete -o -name '*.log' -delete
 	rm -rf data/*.pkl results/*
 
+cleanresults: FORCE
+	rm -rf results/*
+
 FORCE:

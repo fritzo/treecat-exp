@@ -174,12 +174,10 @@ if __name__ == "__main__":
 
     # fancy configs
     parser.add_argument("--fancy-method", default="IterativeImputer")
+    parser.add_argument("--fancy-n-iter", default=10, type=int)
 
     args = parser.parse_args()
     fill_in_defaults(args)
-
-    if args.model == "fancy":
-        args.cuda = False
 
     with pdb_post_mortem():
         main(args)
