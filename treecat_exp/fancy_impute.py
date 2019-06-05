@@ -33,8 +33,8 @@ class FancyImputer(object):
         data.masked_fill_(1 - tensor_mask, np.nan)
 
         data = data.data.numpy()
-        ii = IterativeImputer(n_iter=self.n_iter)
-        # min_value=-largest_plausible_value, max_value=largest_plausible_value)
+        ii = IterativeImputer(n_iter=self.n_iter,
+                              min_value=-10.0, max_value=10.0)
 
         imputed_data = torch.from_numpy(ii.fit_transform(data)).t()
         imputed_data = [imputed_data[col] for col in range(imputed_data.size(0))]

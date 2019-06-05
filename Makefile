@@ -15,6 +15,12 @@ test: FORCE lint
 	rm -rf temp.results.test
 	@echo PASS
 
+martintest: FORCE lint
+	rm -rf temp.results.test
+	RESULTS=temp.results.test python main.py --smoketest --models=fancy
+	rm -rf temp.results.test
+	@echo PASS
+
 train: FORCE
 	python train.py --default-config -v --dataset housing
 	python train.py --default-config -v --dataset news

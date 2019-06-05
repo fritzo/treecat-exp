@@ -9,8 +9,8 @@ class Whitener(object):
     def __init__(self, features, data, mask):
         self.stats = []
         for f, d, m in zip(features, data, mask):
-            if type(f) == Real:
-                slice_f = d[m]
+            if type(f) == Real and m is not False:
+                slice_f = d if m is True else d[m]
                 mean_f, std_f = slice_f.mean().item(), slice_f.std().item()
                 self.stats.append((mean_f, std_f))
             else:
@@ -22,8 +22,7 @@ class Whitener(object):
         for d, m, s in zip(data, mask, self.stats):
             if s is not None:
                 mean, std = s
-                d[m] -= mean
-                d[m] /= std
+                d = (d - mean) / std
             whitened_data.append(d)
 
         return whitened_data
@@ -34,8 +33,7 @@ class Whitener(object):
         for d, m, s in zip(data, mask, self.stats):
             if s is not None:
                 mean, std = s
-                d[m] *= std
-                d[m] += mean
+                d = std * d + mean
             unwhitened_data.append(d)
 
         return unwhitened_data
