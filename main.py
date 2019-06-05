@@ -29,10 +29,12 @@ def cleanup(model, dataset, delete_percent, args):
 
 def main(args):
     # Run cleanup experiment.
-    models = ["treecat"]
+    models = ["treecat"]  # TODO(jpchen) add vae etc.
     datasets = ["housing", "news", "census", "lending"]
     delete_percents = [10] if args.smoketest else [10, 20, 33, 50, 67, 80, 90]
-    for model, dataset, delete_percent in itertools.product(models, datasets, delete_percents):
+    configs = list(itertools.product(models, datasets, delete_percents))
+    # TODO(jpchen) make it easy to run this on opus.
+    for model, dataset, delete_percent in configs:
         cleanup(model, dataset, delete_percent, args)
 
 
