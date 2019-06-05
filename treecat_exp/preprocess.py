@@ -10,10 +10,9 @@ from collections import defaultdict
 import torch
 from pyro.contrib.examples import boston_housing
 from pyro.contrib.tabular import Boolean, Discrete, Real
-from six.moves import cPickle as pickle
 from six.moves import urllib
 
-from treecat_exp.util import DATA, RAWDATA, mkdir_p
+from treecat_exp.util import DATA, RAWDATA, load_object, mkdir_p, save_object
 
 Count = Discrete  # We currently don't handle count data.
 Text = None  # We currently don't handle text data.
@@ -25,7 +24,7 @@ def load_data(args):
     return globals()[name](args)
 
 
-def load_boston_housing(args):
+def load_housing(args):
     """
     See any of the following:
     http://lib.stat.cmu.edu/datasets/boston
@@ -33,11 +32,13 @@ def load_boston_housing(args):
     https://github.com/edwardlib/observations/blob/master/observations/boston_housing.py
     """
     # Convert to torch.
-    cache_filename = os.path.join(DATA, "boston_housing.pkl")
-    if not os.path.exists(cache_filename):
+    cache_filename = os.path.join(DATA, "housing.pkl")
+    if os.path.exists(cache_filename):
+        dataset = load_object(cache_filename)
+    else:
         x_train, header = boston_housing.load(DATA)
         x_train = x_train[torch.randperm(len(x_train))]
-        x_train = torch.tensor(x_train.T, dtype=torch.get_default_dtype()).contiguous()
+        x_train = x_train.t().to(dtype=torch.get_default_dtype()).contiguous()
         features = []
         data = []
         logging.info("loaded {} rows x {} features:".format(x_train.size(1), x_train.size(0)))
@@ -46,18 +47,15 @@ def load_boston_housing(args):
             features.append(ftype(name))
             data.append(column)
         dataset = {
-            "feature": features,
+            "features": features,
             "data": data,
             "args": args,
         }
-        with open(cache_filename, "wb") as f:
-            pickle.dump(dataset, f, pickle.HIGHEST_PROTOCOL)
-    with open(cache_filename, "rb") as f:
-        dataset = pickle.load(f)
+        save_object(dataset, cache_filename)
 
     # Format columns.
-    mask = True
-    return dataset["feature"], dataset["data"], mask
+    mask = [True] * len(dataset["data"])
+    return dataset["features"], dataset["data"], mask
 
 
 def load_census(args):
@@ -67,7 +65,9 @@ def load_census(args):
     # Convert to torch.
     num_rows = min(2458285, args.max_num_rows)
     cache_filename = os.path.join(DATA, "census.{}.pkl".format(num_rows))
-    if not os.path.exists(cache_filename):
+    if os.path.exists(cache_filename):
+        dataset = load_object(cache_filename)
+    else:
         raw_filename = os.path.join(RAWDATA, "uci-us-census-1990", "USCensus1990.data.txt")
         if not os.path.exists(raw_filename):
             mkdir_p(os.path.dirname(raw_filename))
@@ -95,20 +95,18 @@ def load_census(args):
             "data": data,
             "args": args,
         }
-        with open(cache_filename, "wb") as f:
-            pickle.dump(dataset, f, pickle.HIGHEST_PROTOCOL)
-    with open(cache_filename, "rb") as f:
-        dataset = pickle.load(f)
+        save_object(dataset, cache_filename)
 
     # Format columns.
     features = []
     data = []
-    mask = True
+    mask = []
     for j, support in enumerate(dataset["supports"]):
         if len(support) >= 2:
             name = dataset["header"][j]
             features.append(Discrete(name, len(support)))
             data.append(dataset["data"][:, j].long().contiguous())
+            mask.append(True)
     return features, data, mask
 
 
@@ -181,7 +179,9 @@ def load_news(args):
     # Convert to torch.
     num_rows = min(39644, args.max_num_rows)
     cache_filename = os.path.join(DATA, "news.{}.pkl".format(num_rows))
-    if not os.path.exists(cache_filename):
+    if os.path.exists(cache_filename):
+        dataset = load_object(cache_filename)
+    else:
         raw_dir = os.path.join(RAWDATA, "uci-online-news-popularity")
         raw_filename = os.path.join(raw_dir, "OnlineNewsPopularity.csv")
         if not os.path.exists(raw_filename):
@@ -191,7 +191,7 @@ def load_news(args):
             urllib.request.urlretrieve(
                 "https://archive.ics.uci.edu/ml/machine-learning-databases/00332/OnlineNewsPopularity.zip",
                 zip_filename)
-            subprocess.check_call(["unzip", "-f", zip_filename, "-d", raw_dir])
+            subprocess.check_call(["unzip", "-o", zip_filename, "-d", raw_dir])
             os.rename(os.path.join(raw_dir, "OnlineNewsPopularity", "OnlineNewsPopularity.csv"),
                       os.path.join(raw_dir, "OnlineNewsPopularity.csv"))
 
@@ -215,18 +215,16 @@ def load_news(args):
             "data": data,
             "args": args,
         }
-        with open(cache_filename, "wb") as f:
-            pickle.dump(dataset, f, pickle.HIGHEST_PROTOCOL)
-    with open(cache_filename, "rb") as f:
-        dataset = pickle.load(f)
+        save_object(dataset, cache_filename)
 
     # Format columns.
     features = []
     data = []
-    mask = True
+    mask = []
     for name, col in zip(dataset["names"], dataset["data"]):
         features.append(NEWS_SCHEMA[name](name))
         data.append(col)
+        mask.append(True)
     return features, data, mask
 
 
@@ -386,8 +384,10 @@ def load_lending(args):
     # Convert to torch.
     num_rows = min(2260668, args.max_num_rows)
     cache_filename = os.path.join(DATA, "lending.{}.pkl".format(num_rows))
-    if not os.path.exists(cache_filename):
-        raw_dir = os.path.join(RAWDATA, "kaggle-lending-club", "loan.csv")
+    if os.path.exists(cache_filename):
+        dataset = load_object(cache_filename)
+    else:
+        raw_dir = os.path.join(RAWDATA, "kaggle-lending-club")
         raw_filename = os.path.join(raw_dir, "loan.csv")
         if not os.path.exists(raw_filename):
             mkdir_p(raw_dir)
@@ -425,7 +425,7 @@ def load_lending(args):
                     data[i, j] = value
                     mask[i, j] = True
                     cell_count += 1
-                if i % (num_rows // 100) == 0:
+                if i % max(1, num_rows // 100) == 0:
                     sys.stderr.write(".")
                     sys.stderr.flush()
         logging.info("loaded {} rows x {} features".format(data.size(0), data.size(1)))
@@ -446,10 +446,7 @@ def load_lending(args):
             "supports": supports,
             "args": args,
         }
-        with open(cache_filename, "wb") as f:
-            pickle.dump(dataset, f, pickle.HIGHEST_PROTOCOL)
-    with open(cache_filename, "rb") as f:
-        dataset = pickle.load(f)
+        save_object(dataset, cache_filename)
 
     # Format columns.
     features = []
@@ -487,8 +484,7 @@ def partition_data(data, mask, target_size):
     Iterates over minibatches of data, attempting to make each minibatch as
     large as possible up to ``target_size``.
     """
-    if mask is True:
-        mask = [True] * len(data)
+    assert len(data) == len(mask)
     num_rows = next(col.size(0) for col in data if col is not None)
 
     begin = 0

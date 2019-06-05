@@ -1,10 +1,37 @@
-# TreeCat experiments
+# Tabular experiments
 
 This requires the contrib-treecat branch of Pyro
 https://github.com/pyro-ppl/pyro/pull/1370
 
 See paper at
 https://github.com/fritzo/treecat-paper
+
+## File organization
+
+[Makefile](Makefile) contains convenience commands.
+Please try to `make test` before pushing changes :smile:
+
+[treecat_exp](treecat_exp) is a Python library where stable code lives.
+
+[train.py](train.py) is a training script for TreeCat models.
+To train a dataset run e.g.
+```sh
+python train.py --dataset census --batch-size 8192 --num-epochs 2 --cuda
+```
+The notebooks
+[train.ipynb](train.ipynb) and
+[debug_feature_init.ipynb](debug_feature_init.ipynb)
+serve to assess convergence and diagnose issues with initialization.
+
+[main.py](main.py) is the main experiment script to compare multiple models.
+
+[cleanup.py](cleanup.py) and
+[cleanup.ipynb](cleanup.ipynb) evaluate imputation accuracy.
+
+[eval_predictor.py](eval_predictor.py) and
+[eval_predictor.ipynb](eval_predictor.ipynb)
+evaluate the accuracy of a downstream logistic regression model that is trained on
+imputed data with various amounts of completely random missingness.
 
 ## Datasets
 
@@ -28,31 +55,77 @@ Potential new datasets include:
 - [UCI Spambase](https://archive.ics.uci.edu/ml/datasets/Spambase)
 - [UCI Default of credit card](https://archive.ics.uci.edu/ml/datasets/default+of+credit+card+clients)
 
-## Training
+## Algorithms
 
-[train.py](train.py) is the main training script for TreeCat models.
-To train a dataset run e.g.
-```sh
-python train.py --dataset census --batch-size 8192 --num-epochs 2 --cuda
-```
-Training is required before evaluating any model.
+- TreeCat (Fritz)
+- CrossCat (Fritz)
+- VAE variants (JP)
+- GAIN (JP)
+- MICE for deterministic imputation
 
-[train.ipynb](train.ipynb) and
-[debug_feature_init.ipynb](debug_feature_init.ipynb)
-are notebooks to assess training convergence and diagnose issues with initialization.
+Possible other algorithms:
+- Multimodal VAE ([Wu & Goodman 2018](https://arxiv.org/abs/1802.05335))
+- TreeGauss (Fritz)
+- TreeVAE
+- other deterministic imputation algorithms
 
 ## Evaluation / Experiments
 
-[evaluate.py](evaluate.py) and
-[evaluate.ipynb](evaluate.ipynb) evaluate imputation accuracy based on
-posterior predictive probability of true data conditioned on observed data.
+Potential experiments:
 
-[eval_predictor.py](eval_predictor.py) and
-[eval_predictor.ipynb](eval_predictor.ipynb)
-evaluate the accuracy of a downstream logistic regression model that is trained on
-imputed data with various amounts of completely random missingness.
-
-## Testing
-
-[Makefile](Makefile) contains convenience commands.
-Please try to `make test` before pushing changes :smile:
+-   Imputation.
+    ```
+    For each dataset:
+        For each density in [0.1, 0.2, 0.5, 0.8, 0.9]:
+            Randomly remove some density of data (per cell).
+            (Note take care to avoid removing entire rows)
+            For each algorithm in [treecat, crosscat, VAE, GAN, deterministic]:
+                1. impute missing cells; evaluate L1 or L2 loss
+                2. evaluate posterior preditive likelihood of missing values
+    ```
+-   Denoising / outlier detection.
+    ```
+    For each dataset:
+        For each density in [0.001, 0.01, 0.1]:
+            Randomly replace some density of data with "bad" values (per cell).
+            Note: "bad" might mean "ok in the marginal sense but unexpected
+                  when conditioned on rest of row". Or just wrong units e.g.
+            For each algorithm in [treecat, crosscat, VAE?, GAN?, ???]:
+                1. Predict which cells are outliers
+                   Evaluate based on precision/recall curves.
+                2. "Clean up" the data and eval L1 or L2 loss wrt truth.
+    ```
+-   Training a downstream ML algorithm after cleanup.
+    Cleanup means (a) imputing missing fields and (b) denoising / outlier removal.
+    ```
+    For each dataset:
+        For each density in [0.1, ..., 0.9]:
+            # Dirtying.
+            Randomly remove some density of data.
+            ?Randomly replace some cells with "bad" values?
+            # Cleanup.
+            For each algorithm in [treecat, crosscat, vae, gan]:
+                Replace all cells with "denoised" version.
+                For each column:
+                    For each fully-supervised algorithm in
+                       [logistic reg., linear reg., xgboost, SVM]:
+                       train algo on dirt vs cleaned dataset.
+                       Compare trained model on test datset.
+    ```
+-   Active learning experiment.
+    ```
+    For each dataset:
+        For each density in [0.1, 0.2, 0.5, 0.8, 0.9]:
+            Randomly remove some density of data (per cell).
+            For each algorithm in [treecat, crosscat, VAE?, GAN?]:
+                1. Use algo to suggest (for each row) n cells to observe. (n in {1,2,3})
+                2. Add those cells to data (true values).
+                3. impute remaining cells; evaluate L1 or L2 loss
+                4. evaluate posterior preditive likelihood of missing values
+    ```
+- Qualitative structure comparison.
+    ```
+    Pick a representative dataset, e.g. lending club.
+    For each algorithm in [treecat, crosscat]:
+        Discuss the learned latent structure
+    ```
