@@ -49,6 +49,20 @@ DEFAULT_CONFIG = {
             "num_epochs": 2,
         },
     },
+    "fancy": {
+        "housing": {
+            "batch_size": 10000,
+        },
+        "news": {
+            "batch_size": 10000,
+        },
+        "census": {
+            "batch_size": 10000,
+        },
+        "lending": {
+            "batch_size": 10000,
+        },
+    },
 }
 
 

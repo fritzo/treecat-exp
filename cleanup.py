@@ -14,6 +14,7 @@ from treecat_exp.corruption import corrupt
 from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.training import load_treecat, train_treecat
 from treecat_exp.util import CLEANUP, TEST, save_object, load_object, pdb_post_mortem, to_cuda
+from treecat_exp.fancy_impute import train_fancy_imputer, load_fancy_imputer
 from vae.vae import train_vae, load_vae
 
 
@@ -27,6 +28,8 @@ def cleanup(name, features, data, mask, args):
             model = load_treecat(name)
         elif args.model == "vae":
             model = load_vae(name)
+        elif args.model == "fancy":
+            model = load_fancy_imputer(name)
         else:
             raise ValueError("Unknown model: {}".format(args.model))
         return corrupted, cleaned, model
@@ -46,6 +49,8 @@ def cleanup(name, features, data, mask, args):
         model = train_treecat(name, features, corrupted["data"], corrupted["mask"], args)
     elif args.model == "vae":
         model = train_vae(name, features, corrupted["data"], corrupted["mask"], args)
+    elif args.model == "fancy":
+        model = train_fancy_imputer(name, features, corrupted["data"], corrupted["mask"], args)
     else:
         raise ValueError("Unknown model: {}".format(args.model))
 
@@ -166,6 +171,9 @@ if __name__ == "__main__":
     parser.add_argument("-nlr", "--noise-lr", default=0.001, type=float,
                         help="noise lr (for iterative imputation)")
     parser.add_argument("-l", "--logging-interval", default=10, type=int)
+
+    # fancy configs
+    parser.add_argument("--fancy-method", default="IterativeImputer")
 
     args = parser.parse_args()
     fill_in_defaults(args)
