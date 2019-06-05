@@ -10,8 +10,8 @@ from torch.optim import Adam
 from torch.nn import MSELoss
 
 from treecat_exp.preprocess import load_data, partition_data
-from treecat_exp.util import TRAIN, interrupt, pdb_post_mortem, save_object, load_object, to_dense
-from vae.util import to_cuda, reconstruction_loss_function
+from treecat_exp.util import TRAIN, interrupt, pdb_post_mortem, save_object, load_object, to_dense, to_cuda
+from vae.util import reconstruction_loss_function
 from vae.multi import MultiOutput, SingleOutput, MultiInput
 
 from pdb import set_trace as bb
