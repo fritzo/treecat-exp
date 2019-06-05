@@ -36,7 +36,19 @@ DEFAULT_CONFIG = {
             "num_epochs": 2,
         },
     },
-    # TODO(jpchen) add default configs for MIVAE, GAIN, etc.
+    "vae": {
+        "housing": {
+        },
+        "news": {
+        },
+        "census": {
+        },
+        "lending": {
+            "batch_size": 64,
+            "learning_rate": 0.001,
+            "num_epochs": 2,
+        },
+    },
 }
 
 

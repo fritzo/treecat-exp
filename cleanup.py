@@ -14,6 +14,7 @@ from treecat_exp.corruption import corrupt
 from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.training import load_treecat, train_treecat
 from treecat_exp.util import CLEANUP, TEST, save_object, load_object, pdb_post_mortem, to_cuda
+from vae.vae import train_vae
 
 
 def cleanup(name, features, data, mask, args):
@@ -39,7 +40,7 @@ def cleanup(name, features, data, mask, args):
     if args.model == "treecat":
         model = train_treecat(name, features, corrupted["data"], corrupted["mask"], args)
     elif args.model == "vae":
-        raise NotImplementedError("TODO(jpchen) train a model")
+        model = train_vae(name, features, corrupted["data"], corrupted["mask"], args)
     else:
         raise ValueError("Unknown model: {}".format(args.model))
 
@@ -135,18 +136,30 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", default="housing")
     parser.add_argument("-r", "--max-num-rows", default=1000000000, type=int)
     parser.add_argument("-m", "--model", default="treecat")
-    parser.add_argument("-c", "--capacity", default=8, type=int)
-    parser.add_argument("-lr", "--learning-rate", default=0.01, type=float)
-    parser.add_argument("-ar", "--annealing-rate", default=0.01, type=float)
-    parser.add_argument("-n", "--num-epochs", default=100, type=int)
-    parser.add_argument("-b", "--batch-size", default=64, type=int)
-    parser.add_argument("-i", "--init-size", default=1000000000, type=int)
     parser.add_argument('--default-config', dest='default_config', action='store_true')
     parser.add_argument('--custom-config', dest='default_config', action='store_false')
     parser.set_defaults(default_config=True)
     parser.add_argument("--seed", default=123456789, type=int)
     parser.add_argument("--cuda", action="store_true")
     parser.add_argument("-v", "--verbose", action="store_true")
+
+    # Treecat configs
+    parser.add_argument("-c", "--capacity", default=8, type=int)
+    parser.add_argument("-lr", "--learning-rate", default=0.01, type=float)
+    parser.add_argument("-ar", "--annealing-rate", default=0.01, type=float)
+    parser.add_argument("-n", "--num-epochs", default=100, type=int)
+    parser.add_argument("-b", "--batch-size", default=64, type=int)
+    parser.add_argument("-i", "--init-size", default=1000000000, type=int)
+
+    # VAE configs
+    parser.add_argument("--hidden-dim", default=128, type=int)
+    parser.add_argument("--impute", action="store_true", default=False)
+    parser.add_argument("--multi", action="store_true", default=False,
+                        help="whether to use multi input/output per Camino et al (2018)")
+    parser.add_argument("-nlr", "--noise-lr", default=0.001, type=float,
+                        help="noise lr (for iterative imputation)")
+    parser.add_argument("-l", "--logging-interval", default=10, type=int)
+
     args = parser.parse_args()
     fill_in_defaults(args)
 

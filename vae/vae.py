@@ -10,8 +10,8 @@ from torch.nn import MSELoss
 
 from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.util import TRAIN, interrupt, pdb_post_mortem
-from util import to_cuda, reconstruction_loss_function
-from multi import MultiOutput, SingleOutput, MultiInput
+from vae.util import to_cuda, reconstruction_loss_function
+from vae.multi import MultiOutput, SingleOutput, MultiInput
 
 from pdb import set_trace as bb
 
@@ -138,14 +138,29 @@ def impute(args):
         return observed_loss, missing_loss, loss
 
 
-def train(args):
-    torch.manual_seed(1)
-    # Load data.
-    features, data, mask = load_data(args)
-    num_rows = len(data[0])
-    num_cells = num_rows * len(features)
-    logging.info("loaded {} rows x {} features = {} cells".format(
-        num_rows, len(features), num_cells))
+class VAEModel(object):
+    def __init__(self, vae):
+        self.vae = vae
+
+    def sample(self, data, mask):
+        data = torch.stack(data, -1).float()
+        mask = torch.stack(mask, -1).float()
+        # TODO scale noise appropriately
+        masked_data = data * mask + (1. - mask) * torch.randn(data.shape, device=mask.device)
+        out = self.vae(masked_data)
+        return out[1]  # reconstruction
+
+    def log_prob(self, data, mask):
+        data = torch.stack(data, -1).float()
+        mask = torch.stack(mask, -1).float()
+        masked_data = data * mask + (1. - mask) * torch.randn(data.shape, device=mask.device)
+        z, mu, log_var = self.vae.encoder(masked_data)
+        # TODO: correct?
+        return torch.distributions.Normal(mu, (log_var / 2).exp()).log_prob(z).sum()
+
+
+def train_vae(name, features, data, mask, args):
+    torch.manual_seed(args.seed)
     if args.multi:
         raise NotImplementedError('MultiInput/output')
     else:
@@ -169,6 +184,7 @@ def train(args):
                     continue
                 if not m:
                     # fill missing data with std noise
+                    # TODO scale noise appropriately
                     batch_data[i] = torch.randn(args.batch_size)
                     batch_mask[i] = torch.zeros(args.batch_size)
                 else:
@@ -194,6 +210,7 @@ def train(args):
                              .format((num_batches * args.batch_size),
                                      data.shape[0],
                                      epoch_loss))
+    return VAEModel(vae)
 
 
 if __name__ == "__main__":
@@ -221,6 +238,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     logging.basicConfig(format="%(relativeCreated) 9d %(message)s",
                         level=logging.DEBUG if args.verbose else logging.INFO)
-    train(args)
     if args.impute:
         impute(args)
