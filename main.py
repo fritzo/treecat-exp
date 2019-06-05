@@ -51,7 +51,7 @@ if __name__ == "__main__":
     parser.add_argument("--experiments", help="list of experiments to run",
                         default="cleanup")
     parser.add_argument("--models", help="list of models to train",
-                        default="treecat,vae")
+                        default="fancy,treecat,vae")
     parser.add_argument("--datasets", help="list of datasets",
                         default="housing,news,census,lending")
     parser.add_argument("--smoketest", action="store_true")
