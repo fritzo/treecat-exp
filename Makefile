@@ -32,6 +32,9 @@ martintest: FORCE lint
 cleanup-housing: FORCE
 	python main.py --datasets=housing --parallel --log-errors
 
+cleanup-credit: FORCE
+	python main.py --datasets=credit --parallel --log-errors
+
 experiments: FORCE
 	python main.py
 
