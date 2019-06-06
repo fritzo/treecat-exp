@@ -4,6 +4,7 @@ import argparse
 import datetime
 import logging
 import os
+import re
 import sys
 
 import pyro
@@ -203,8 +204,9 @@ if __name__ == "__main__":
         except Exception as e:
             logging.error("Job failed with error: {}\nSee errors.log".format(e))
             with open("errors.log", "a") as f:
-                f.write("# The following command failed at {}:\n{}\n".format(
+                f.write("# The following command failed at {} with error:\n# {}\npython {}\n\n".format(
                     datetime.datetime.now(),
+                    re.sub(r"\s+", " ", str(e)),
                     " \\\n  ".join(a for a in sys.argv if a != "--log-errors")))
             sys.exit(1)
     else:
