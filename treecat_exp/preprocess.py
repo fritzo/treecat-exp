@@ -230,6 +230,122 @@ def load_news(args):
     return features, data, mask
 
 
+CREDIT_SCHEMA = {
+    "LIMIT_BAL": Real,
+    "SEX": Discrete,
+    "EDUCATION": Discrete,
+    "MARRIAGE": Discrete,
+    "AGE": Real,
+    "PAY_0": Discrete,
+    "PAY_2": Discrete,
+    "PAY_3": Discrete,
+    "PAY_4": Discrete,
+    "PAY_5": Discrete,
+    "PAY_6": Discrete,
+    "BILL_AMT1": Real,
+    "BILL_AMT2": Real,
+    "BILL_AMT3": Real,
+    "BILL_AMT4": Real,
+    "BILL_AMT5": Real,
+    "BILL_AMT6": Real,
+    "PAY_AMT1": Real,
+    "PAY_AMT2": Real,
+    "PAY_AMT3": Real,
+    "PAY_AMT4": Real,
+    "PAY_AMT5": Real,
+    "PAY_AMT6": Real,
+}
+
+
+def load_credit(args):
+    """
+    See https://archive.ics.uci.edu/ml/datasets/default+of+credit+card+clients
+    """
+    import xlrd
+    import wget
+    # Convert to torch.
+    num_rows = min(30000, args.max_num_rows)
+    cache_filename = os.path.join(DATA, "credit.{}.pkl".format(num_rows))
+    if os.path.exists(cache_filename):
+        dataset = load_object(cache_filename)
+    else:
+        raw_dir = os.path.join(RAWDATA, "uci-default-credit-card")
+        raw_filename = os.path.join(raw_dir, "DefaultCreditCard.csv")
+        if not os.path.exists(raw_filename):
+            logging.info("Downloading default credit card dataset")
+            mkdir_p(raw_dir)
+            wget.download("https://archive.ics.uci.edu/ml/machine-learning-databases/" +
+                          "00350/default of credit card clients.xls",
+                          raw_dir + '/default_credit_card.xls'
+                          )
+            xl_file = xlrd.open_workbook(raw_dir + "/default_credit_card.xls")
+            sheet = xl_file.sheet_by_name("Data")
+
+            # convert xl file to csv
+            with open(raw_filename, "w") as csv_file:
+                writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
+                for row_number in range(1, sheet.nrows):  # ignore first row
+                    writer.writerow(sheet.row_values(row_number))
+
+        names = list(sorted(CREDIT_SCHEMA))
+        num_cols = len(CREDIT_SCHEMA)
+        data = torch.zeros(num_rows, num_cols, dtype=torch.float)
+        positions = {name: pos for pos, name in enumerate(names)}
+        supports = {name: defaultdict(set)
+                    for name in names if CREDIT_SCHEMA[name] is Discrete}
+        with open(raw_filename) as f:
+            reader = csv.reader(f)
+            header = [name.replace("\"", "").strip() for name in next(reader)]
+            logging.debug(header)
+            assert set(names) <= set(header), "invalid schema"
+            js = [positions.get(name) for name in header]
+            types = [CREDIT_SCHEMA.get(name) for name in header]
+            supps = [supports.get(name) for name in header]
+            for i, row in enumerate(reader):
+                if i == num_rows:
+                    break
+                for name, cell, typ, support, j in zip(header, row, types, supps, js):
+                    cell = float(cell)
+                    if typ is None or not cell:
+                        continue
+                    if typ is Real:
+                        value = cell
+                    else:
+                        value = support.setdefault(cell, len(support))
+                    data[i, j] = value
+        logging.debug("\n".join(
+            ["Cardinalities:"] +
+            ["{: >10} {}".format(len(support), name)
+             for name, support in sorted(supports.items())]))
+
+        data = data[torch.randperm(len(data))].t().contiguous()
+        dataset = {
+            "names": names,
+            "data": data,
+            "supports": supports,
+            "args": args,
+        }
+        save_object(dataset, cache_filename)
+
+    # Format columns.
+    features = []
+    data = []
+    for name, col in zip(dataset["names"], dataset["data"]):
+        typ = CREDIT_SCHEMA[name]
+        if typ is Discrete:
+            cardinality = len(dataset["supports"][name])
+            if cardinality == 1:
+                logging.debug("Dropping trivial feature: {}".format(name))
+                continue
+            feature = typ(name, cardinality)
+        else:
+            feature = typ(name)
+        features.append(feature)
+        data.append(col.to(feature.dtype))
+    mask = [True] * len(features)
+    return features, data, mask
+
+
 LENDING_SCHEMA = {
     "acc_now_delinq": Discrete,
     "acc_open_past_24mths": Discrete,

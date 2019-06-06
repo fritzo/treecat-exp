@@ -109,3 +109,4 @@ venv.bak/
 rawdata
 data/
 results/
+temp.results.test

@@ -10,34 +10,43 @@ DEFAULT_CONFIG = {
         "housing": {
             "capacity": 8,
             "batch_size": 128,
-            "learning_rate": 0.01,
-            "annealing_rate": 0.01,
-            "num_epochs": 200,
+            "learning_rate": 0.02,
+            "annealing_rate": 0.02,
+            "num_epochs": 100,
+        },
+        "credit": {
+            "capacity": 8,
+            "batch_size": 2000,
+            "learning_rate": 0.02,
+            "annealing_rate": 0.02,
+            "num_epochs": 35,
         },
         "news": {
             "capacity": 8,
             "batch_size": 2048,
-            "learning_rate": 0.01,
-            "annealing_rate": 0.01,
-            "num_epochs": 10,
+            "learning_rate": 0.02,
+            "annealing_rate": 0.02,
+            "num_epochs": 30,
         },
         "census": {
             "capacity": 8,
             "batch_size": 8192,
-            "learning_rate": 0.01,
-            "annealing_rate": 0.01,
-            "num_epochs": 2,
+            "learning_rate": 0.02,
+            "annealing_rate": 0.02,
+            "num_epochs": 1,
         },
         "lending": {
             "capacity": 16,
             "batch_size": 1440,
-            "learning_rate": 0.01,
-            "annealing_rate": 0.01,
-            "num_epochs": 2,
+            "learning_rate": 0.02,
+            "annealing_rate": 0.02,
+            "num_epochs": 1,
         },
     },
     "vae": {
         "housing": {
+        },
+        "credit": {
         },
         "news": {
         },
@@ -51,6 +60,11 @@ DEFAULT_CONFIG = {
     },
     "fancy": {
         "housing": {
+            "batch_size": 50000,
+            "cuda": False,
+            "fancy_n_iter": 10,
+        },
+        "credit": {
             "batch_size": 50000,
             "cuda": False,
             "fancy_n_iter": 10,

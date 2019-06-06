@@ -15,6 +15,14 @@ test: FORCE lint
 	rm -rf temp.results.test
 	@echo PASS
 
+# Parallel version of `make test`
+ptest: FORCE lint
+	rm -rf temp.results.test
+	RESULTS=temp.results.test python train.py -n 1 -v
+	RESULTS=temp.results.test python main.py --smoketest --parallel
+	rm -rf temp.results.test
+	@echo PASS
+
 martintest: FORCE lint
 	rm -rf temp.results.test
 	RESULTS=temp.results.test python main.py --smoketest --models=fancy
@@ -23,6 +31,9 @@ martintest: FORCE lint
 
 cleanup-housing: FORCE
 	python main.py --datasets=housing --parallel --log-errors
+
+cleanup-credit: FORCE
+	python main.py --datasets=credit --parallel --log-errors
 
 experiments: FORCE
 	python main.py

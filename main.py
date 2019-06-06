@@ -67,7 +67,7 @@ if __name__ == "__main__":
     parser.add_argument("--models", help="list of models to train",
                         default="fancy,treecat,vae")
     parser.add_argument("--datasets", help="list of datasets",
-                        default="housing,news,census,lending")
+                        default="housing,credit,news,census,lending")
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("-d", "--pdb", action="store_true",
                         help="On error, open a debugger")
