@@ -485,30 +485,30 @@ def partition_data(data, mask, target_size):
     """
     Iterates over minibatches of data, attempting to make each minibatch as
     large as possible up to ``target_size``.
+
+    :param data: Either a single contiguous ``torch.Tensor``s or a
+        heterogeneous list of ``torch.Tensors``.
+    :param data: Either a single contiguous ``torch.Tensor``s or a
+        heterogeneous list of either ``torch.Tensors`` or bools.
     """
     assert len(data) == len(mask)
-    num_rows = next(col.size(0) for col in data if col is not None)
+    assert all(col is not None for col in data)
+    num_rows = len(data[0])
 
     begin = 0
     while begin < num_rows:
         end = begin + target_size
-        batch_data = []
-        batch_mask = []
 
-        for col_data, col_mask in zip(data, mask):
-            if isinstance(col_mask, torch.Tensor):
-                col_mask = col_mask[begin: end]
-                if col_mask.all():
-                    col_mask = True
-                elif not col_mask.any():
-                    col_mask = False
-                else:
-                    batch_data.append(col_data[begin: end])
-                    batch_mask.append(col_mask)
-                    continue
-            assert isinstance(col_mask, bool)
-            batch_data.append(col_data[begin: end] if col_mask else None)
-            batch_mask.append(col_mask)
+        if isinstance(data, torch.Tensor):
+            batch_data = data[:, begin: end]
+        else:
+            batch_data = [col[begin: end] for col in data]
+
+        if isinstance(mask, torch.Tensor):
+            batch_mask = mask[:, begin: end]
+        else:
+            batch_mask = [col if isinstance(col, bool) else col[begin: end]
+                          for col in mask]
 
         yield batch_data, batch_mask
         begin = end
