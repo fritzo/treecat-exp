@@ -21,6 +21,13 @@ DEFAULT_CONFIG = {
             "annealing_rate": 0.01,
             "num_epochs": 10,
         },
+        "credit": {
+            "capacity": 8,
+            "batch_size": 2048,
+            "learning_rate": 0.01,
+            "annealing_rate": 0.01,
+            "num_epochs": 10,
+        },
         "census": {
             "capacity": 8,
             "batch_size": 8192,
@@ -41,6 +48,8 @@ DEFAULT_CONFIG = {
         },
         "news": {
         },
+        "credit": {
+        },
         "census": {
         },
         "lending": {
@@ -56,6 +65,11 @@ DEFAULT_CONFIG = {
             "fancy_n_iter": 10,
         },
         "news": {
+            "batch_size": 50000,
+            "cuda": False,
+            "fancy_n_iter": 10,
+        },
+        "credit": {
             "batch_size": 50000,
             "cuda": False,
             "fancy_n_iter": 10,
