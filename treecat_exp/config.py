@@ -35,6 +35,8 @@ DEFAULT_CONFIG = {
             "annealing_rate": 0.01,
             "num_epochs": 2,
         },
+        "credit": {
+        },
     },
     "vae": {
         "housing": {
@@ -47,6 +49,8 @@ DEFAULT_CONFIG = {
             "batch_size": 64,
             "learning_rate": 0.001,
             "num_epochs": 2,
+        },
+        "credit": {
         },
     },
     "vae_iter_impute": {
@@ -61,6 +65,8 @@ DEFAULT_CONFIG = {
             "learning_rate": 0.001,
             "noise_lr": 0.001,
             "num_epochs": 2,
+        },
+        "credit": {
         },
     },
 }
