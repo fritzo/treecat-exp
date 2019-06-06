@@ -69,6 +69,28 @@ DEFAULT_CONFIG = {
         "credit": {
         },
     },
+    "fancy": {
+        "housing": {
+            "batch_size": 50000,
+            "cuda": False,
+            "fancy_n_iter": 10,
+        },
+        "news": {
+            "batch_size": 50000,
+            "cuda": False,
+            "fancy_n_iter": 10,
+        },
+        "census": {
+            "batch_size": 50000,
+            "cuda": False,
+            "fancy_n_iter": 10,
+        },
+        "lending": {
+            "batch_size": 50000,
+            "cuda": False,
+            "fancy_n_iter": 10,
+        },
+    },
 }
 
 
@@ -77,13 +99,13 @@ def fill_in_defaults(args):
     Fills in default values defined in the global DEFALT_CONFIG dict.
     """
     if args.default_config:
+        if torch.cuda.is_available():
+            args.cuda = True
         default_config = DEFAULT_CONFIG[args.model][args.dataset]
         for key, value in default_config.items():
             assert hasattr(args, key)
             assert type(getattr(args, key)) == type(value)
             setattr(args, key, value)
-        if torch.cuda.is_available():
-            args.cuda = True
 
     logging.basicConfig(format="%(relativeCreated) 9d %(message)s",
                         level=logging.DEBUG if args.verbose else logging.INFO)

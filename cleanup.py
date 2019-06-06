@@ -14,6 +14,7 @@ from treecat_exp.corruption import corrupt
 from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.training import load_treecat, train_treecat
 from treecat_exp.util import CLEANUP, TEST, save_object, load_object, pdb_post_mortem, to_cuda
+from treecat_exp.fancy_impute import train_fancy_imputer, load_fancy_imputer
 from vae.vae import train_vae, load_vae, impute
 
 
@@ -27,6 +28,8 @@ def cleanup(name, features, data, mask, args):
             model = load_treecat(name)
         elif args.model == "vae" or args.model == "vae_iter_impute":
             model = load_vae(name)
+        elif args.model == "fancy":
+            model = load_fancy_imputer(name)
         else:
             raise ValueError("Unknown model: {}".format(args.model))
         return corrupted, cleaned, model
@@ -50,6 +53,8 @@ def cleanup(name, features, data, mask, args):
         train_vae(name, features, corrupted["data"], corrupted["mask"], args)
         # right now this using the train data, as opposed to a held out dataset
         model = impute(name, corrupted["data"], corrupted["mask"], args)
+    elif args.model == "fancy":
+        model = train_fancy_imputer(name, features, corrupted["data"], corrupted["mask"], args)
     else:
         raise ValueError("Unknown model: {}".format(args.model))
 
@@ -99,9 +104,9 @@ def main(args):
             true_col = true_col[mask[i]]
             cleaned_col = cleaned_col[mask[i]]
         if isinstance(features[i], Real):
-            loss = (true_col - cleaned_col).pow(2).mean() / true_col.std()
+            loss = (true_col - cleaned_col).pow(2).sum() / true_col.std()
         elif isinstance(features[i], (Boolean, Discrete)):
-            loss = (true_col != cleaned_col).float().mean()
+            loss = (true_col != cleaned_col).float().sum()
         else:
             raise ValueError("Unsupported feature type: {}".format(type(features[i])))
         num_cleaned.append((corrupted["mask"][i] != cleaned["mask"][i]).float().sum().item())
@@ -174,6 +179,10 @@ if __name__ == "__main__":
                         help="noise lr (for iterative imputation)")
     parser.add_argument("-l", "--logging-interval", default=10, type=int)
     parser.add_argument("--tolerance", default=0.001, type=float, help="tolerance for iterative imputation")
+
+    # fancy configs
+    parser.add_argument("--fancy-method", default="IterativeImputer")
+    parser.add_argument("--fancy-n-iter", default=10, type=int)
 
     args = parser.parse_args()
     fill_in_defaults(args)
