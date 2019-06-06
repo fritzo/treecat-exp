@@ -96,6 +96,11 @@ def train_treecat(name, features, data, mask, args):
     optim = Adam({"lr": args.learning_rate})
     trainer = model.trainer(optim)
     for batch_data, batch_mask in partition_data(data, mask, init_size):
+        if isinstance(batch_mask, torch.Tensor):
+            if batch_mask.all():
+                batch_mask = True
+            elif not batch_mask.any():
+                batch_mask = False
         if args.cuda:
             batch_data = to_cuda(batch_data)
             batch_mask = to_cuda(batch_mask)
