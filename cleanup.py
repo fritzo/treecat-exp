@@ -1,21 +1,23 @@
 from __future__ import absolute_import, division, print_function
 
 import argparse
+import datetime
 import logging
 import os
+import sys
 
 import pyro
 import torch
 from pyro.contrib.tabular import TreeCat
-from pyro.contrib.tabular.features import Real, Boolean, Discrete
+from pyro.contrib.tabular.features import Boolean, Discrete, Real
 
 from treecat_exp.config import fill_in_defaults
 from treecat_exp.corruption import corrupt
+from treecat_exp.fancy_impute import load_fancy_imputer, train_fancy_imputer
 from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.training import load_treecat, train_treecat
-from treecat_exp.util import CLEANUP, TEST, save_object, load_object, pdb_post_mortem, to_cuda
-from treecat_exp.fancy_impute import train_fancy_imputer, load_fancy_imputer
-from vae.vae import train_vae, load_vae
+from treecat_exp.util import CLEANUP, TEST, load_object, pdb_post_mortem, save_object, to_cuda
+from vae.vae import load_vae, train_vae
 
 
 def cleanup(name, features, data, mask, args):
@@ -165,6 +167,8 @@ if __name__ == "__main__":
     parser.add_argument("--seed", default=123456789, type=int)
     parser.add_argument("--cuda", action="store_true")
     parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("--pdb", action="store_true")
+    parser.add_argument("--log-errors", action="store_true")
 
     # Treecat configs
     parser.add_argument("-c", "--capacity", default=8, type=int)
@@ -190,5 +194,18 @@ if __name__ == "__main__":
     args = parser.parse_args()
     fill_in_defaults(args)
 
-    with pdb_post_mortem():
+    if args.pdb:
+        with pdb_post_mortem():
+            main(args)
+    elif args.log_errors:
+        try:
+            main(args)
+        except Exception as e:
+            logging.error("Job failed with error: {}\nSee errors.log".format(e))
+            with open("errors.log", "a") as f:
+                f.write("# The following command failed at {}:\n{}\n".format(
+                    datetime.datetime.now(),
+                    " \\\n  ".join(a for a in sys.argv if a != "--log-errors")))
+            sys.exit(1)
+    else:
         main(args)
