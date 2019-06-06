@@ -300,24 +300,42 @@ def load_credit(args):
                 for row_number in range(1, sheet.nrows):  # ignore first row
                     writer.writerow(sheet.row_values(row_number))
 
+        names = list(sorted(CREDIT_SCHEMA))
+        num_cols = len(CREDIT_SCHEMA)
+        data = torch.zeros(num_rows, num_cols, dtype=torch.float)
+        positions = {name: pos for pos, name in enumerate(names)}
+        supports = {name: defaultdict(set)
+                    for name in names if CREDIT_SCHEMA[name] is Discrete}
         with open(raw_filename) as f:
             reader = csv.reader(f)
             header = [name.replace("\"", "").strip() for name in next(reader)]
             logging.debug(header)
-            num_cols = len(CREDIT_SCHEMA)
-            data = torch.zeros(num_rows, num_cols, dtype=torch.float)
-            names = list(sorted(CREDIT_SCHEMA))
-            positions = {name: pos for pos, name in enumerate(names)}
+            assert set(names) <= set(header), "invalid schema"
+            js = [positions.get(name) for name in header]
+            types = [CREDIT_SCHEMA.get(name) for name in header]
+            supps = [supports.get(name) for name in header]
             for i, row in enumerate(reader):
                 if i == num_rows:
                     break
-                for name, cell in zip(header, row):
-                    if name in positions:
-                        data[i, positions[name]] = float(cell)
+                for name, cell, typ, support, j in zip(header, row, types, supps, js):
+                    cell = float(cell)
+                    if typ is None or not cell:
+                        continue
+                    if typ is Real:
+                        value = cell
+                    else:
+                        value = support.setdefault(cell, len(support))
+                    data[i, j] = value
+        logging.debug("\n".join(
+            ["Cardinalities:"] +
+            ["{: >10} {}".format(len(support), name)
+             for name, support in sorted(supports.items())]))
+
         data = data[torch.randperm(len(data))].t().contiguous()
         dataset = {
             "names": names,
             "data": data,
+            "supports": supports,
             "args": args,
         }
         save_object(dataset, cache_filename)
@@ -325,16 +343,19 @@ def load_credit(args):
     # Format columns.
     features = []
     data = []
-    mask = []
     for name, col in zip(dataset["names"], dataset["data"]):
         typ = CREDIT_SCHEMA[name]
         if typ is Discrete:
-            feature = typ(name, len(CREDIT_SUPPORTS[name]))
+            cardinality = len(dataset["supports"][name])
+            if cardinality == 1:
+                logging.debug("Dropping trivial feature: {}".format(name))
+                continue
+            feature = typ(name, cardinality)
         else:
             feature = typ(name)
         features.append(feature)
-        data.append(col)
-        mask.append(True)
+        data.append(col.to(feature.dtype))
+    mask = [True] * len(features)
     return features, data, mask
 
 
