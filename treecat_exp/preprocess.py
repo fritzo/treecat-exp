@@ -257,19 +257,6 @@ CREDIT_SCHEMA = {
 }
 
 
-CREDIT_SUPPORTS = {
-    "SEX": (1, 2),
-    "EDUCATION": (0, 1, 2, 3, 4, 5, 6),
-    "MARRIAGE": (0, 1, 2, 3),
-    "PAY_0": (-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8),
-    "PAY_2": (-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8),
-    "PAY_3": (-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8),
-    "PAY_4": (-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8),
-    "PAY_5": (-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8),
-    "PAY_6": (-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8),
-}
-
-
 def load_credit(args):
     """
     See https://archive.ics.uci.edu/ml/datasets/default+of+credit+card+clients
