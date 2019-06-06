@@ -5,7 +5,7 @@ import os
 
 import pyro
 import torch
-from pyro.contrib.tabular import Mixture, TreeCat
+from pyro.contrib.tabular import TreeCat
 from pyro.contrib.tabular.treecat import print_tree
 from pyro.optim import Adam
 
@@ -91,8 +91,6 @@ def train_treecat(name, features, data, mask, args):
     pyro.get_param_store().clear()
     if args.model == "treecat":
         model = TreeCat(features, args.capacity, annealing_rate=args.annealing_rate)
-    elif args.model == "mixture":
-        model = Mixture(features, args.capacity)
     else:
         raise ValueError("Unknown model: {}".format(args.model))
     optim = Adam({"lr": args.learning_rate})
