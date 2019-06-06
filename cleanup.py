@@ -154,7 +154,7 @@ if __name__ == "__main__":
     parser.add_argument("--replace-percent", default=0, type=int)
     parser.add_argument("--dataset", default="housing")
     parser.add_argument("-r", "--max-num-rows", default=1000000000, type=int)
-    parser.add_argument("-m", "--model", default="treecat", help="{treecat, vae, vae_iter_impute}")
+    parser.add_argument("-m", "--model", default="treecat", help="{treecat, vae, vae_iter_impute, fancy}")
     parser.add_argument('--default-config', dest='default_config', action='store_true')
     parser.add_argument('--custom-config', dest='default_config', action='store_false')
     parser.set_defaults(default_config=True)

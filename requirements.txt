@@ -1,1 +1,3 @@
 fancyimpute
+wget
+xlrd

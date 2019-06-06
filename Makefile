@@ -11,6 +11,9 @@ lint: FORCE
 test: FORCE lint
 	rm -rf temp.results.test
 	RESULTS=temp.results.test python train.py -n 1 -v
+	RESULTS=temp.results.test python cleanup.py -n 1 -m treecat
+	RESULTS=temp.results.test python cleanup.py -n 1 -m fancy
+	RESULTS=temp.results.test python cleanup.py -n 1 -m vae
 	RESULTS=temp.results.test python main.py --smoketest
 	rm -rf temp.results.test
 	@echo PASS
