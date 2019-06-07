@@ -17,8 +17,8 @@ from treecat_exp.corruption import corrupt
 from treecat_exp.fancy_impute import load_fancy_imputer, train_fancy_imputer
 from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.training import load_treecat, train_treecat
-from treecat_exp.util import CLEANUP, TEST, load_object, pdb_post_mortem, save_object, to_cuda
-from treecat_exp.vae.vae import load_vae, train_vae, impute
+from treecat_exp.util import CLEANUP, TEST, diversity, load_object, pdb_post_mortem, save_object, to_cuda
+from treecat_exp.vae.vae import impute, load_vae, train_vae
 
 
 def cleanup(name, features, data, mask, args):
@@ -108,7 +108,7 @@ def main(args):
         if isinstance(features[i], Real):
             loss = (true_col - cleaned_col).pow(2).sum().sqrt() / true_col.std()
         elif isinstance(features[i], (Boolean, Discrete)):
-            loss = (true_col != cleaned_col).float().sum()
+            loss = (true_col != cleaned_col).float().sum() / diversity(true_col)
         else:
             raise ValueError("Unsupported feature type: {}".format(type(features[i])))
         num_cleaned.append((corrupted["mask"][i] != cleaned["mask"][i]).float().sum().item())

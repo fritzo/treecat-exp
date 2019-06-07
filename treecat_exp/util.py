@@ -83,6 +83,20 @@ def to_cuda(x):
     raise ValueError(x)
 
 
+@torch.no_grad()
+def diversity(vector):
+    """
+    Computes L2 diversity of a discrete-valued vector.
+    """
+    assert vector.dim() == 1
+    if vector.dtype != torch.long:
+        vector = vector.round().clamp(min=0).long()
+    counts = torch.zeros(torch.Size([1 + vector.max().item()]), dtype=torch.float)
+    counts.scatter_add_(0, vector, torch.ones(vector.shape))
+    probs = (counts / counts.sum()).clamp_(min=1e-20)
+    return 1. / (probs ** 2).sum().item()
+
+
 def save_object(data, path):
     with open(path, "wb") as f:
         torch.save(data, f, pickle_module=pickle, pickle_protocol=pickle.HIGHEST_PROTOCOL)
