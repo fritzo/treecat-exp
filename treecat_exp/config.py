@@ -58,31 +58,105 @@ DEFAULT_CONFIG = {
             "num_epochs": 2,
         },
     },
-    "fancy": {
+    "fancyii": {
         "housing": {
             "batch_size": 50000,
             "cuda": False,
             "fancy_n_iter": 10,
+            "fancy_method": "IterativeImputer",
         },
         "credit": {
             "batch_size": 50000,
             "cuda": False,
             "fancy_n_iter": 10,
+            "fancy_method": "IterativeImputer",
         },
         "news": {
             "batch_size": 50000,
             "cuda": False,
             "fancy_n_iter": 10,
+            "fancy_method": "IterativeImputer",
         },
         "census": {
             "batch_size": 50000,
             "cuda": False,
             "fancy_n_iter": 10,
+            "fancy_method": "IterativeImputer",
         },
         "lending": {
             "batch_size": 50000,
             "cuda": False,
             "fancy_n_iter": 10,
+            "fancy_method": "IterativeImputer",
+        },
+    },
+    "fancysvd": {
+        "housing": {
+            "batch_size": 50000,
+            "cuda": False,
+            "fancy_n_iter": 10,
+            "fancy_svd_rank": 10,
+            "fancy_method": "IterativeSVD",
+        },
+        "credit": {
+            "batch_size": 50000,
+            "cuda": False,
+            "fancy_n_iter": 10,
+            "fancy_svd_rank": 10,
+            "fancy_method": "IterativeSVD",
+        },
+        "news": {
+            "batch_size": 50000,
+            "cuda": False,
+            "fancy_n_iter": 10,
+            "fancy_svd_rank": 10,
+            "fancy_method": "IterativeSVD",
+        },
+        "census": {
+            "batch_size": 50000,
+            "cuda": False,
+            "fancy_n_iter": 10,
+            "fancy_svd_rank": 10,
+            "fancy_method": "IterativeSVD",
+        },
+        "lending": {
+            "batch_size": 50000,
+            "cuda": False,
+            "fancy_n_iter": 10,
+            "fancy_svd_rank": 10,
+            "fancy_method": "IterativeSVD",
+        },
+    },
+    "fancyknn": {
+        "housing": {
+            "batch_size": 50000,
+            "cuda": False,
+            "fancy_knn_neighbors": 5,
+            "fancy_method": "KNN",
+        },
+        "credit": {
+            "batch_size": 50000,
+            "cuda": False,
+            "fancy_knn_neighbors": 5,
+            "fancy_method": "KNN",
+        },
+        "news": {
+            "batch_size": 50000,
+            "cuda": False,
+            "fancy_knn_neighbors": 5,
+            "fancy_method": "KNN",
+        },
+        "census": {
+            "batch_size": 50000,
+            "cuda": False,
+            "fancy_knn_neighbors": 5,
+            "fancy_method": "KNN",
+        },
+        "lending": {
+            "batch_size": 50000,
+            "cuda": False,
+            "fancy_knn_neighbors": 5,
+            "fancy_method": "KNN",
         },
     },
 }

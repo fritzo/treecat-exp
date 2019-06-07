@@ -25,7 +25,7 @@ ptest: FORCE lint
 
 martintest: FORCE lint
 	rm -rf temp.results.test
-	RESULTS=temp.results.test python main.py --smoketest --models=fancy
+	RESULTS=temp.results.test python main.py --smoketest --models=fancyii,fancysvd,fancyknn
 	rm -rf temp.results.test
 	@echo PASS
 

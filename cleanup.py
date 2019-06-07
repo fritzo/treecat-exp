@@ -31,7 +31,7 @@ def cleanup(name, features, data, mask, args):
             model = load_treecat(name)
         elif args.model == "vae":
             model = load_vae(name)
-        elif args.model == "fancy":
+        elif args.model.startswith("fancy"):
             model = load_fancy_imputer(name)
         else:
             raise ValueError("Unknown model: {}".format(args.model))
@@ -52,7 +52,7 @@ def cleanup(name, features, data, mask, args):
         model = train_treecat(name, features, corrupted["data"], corrupted["mask"], args)
     elif args.model == "vae":
         model = train_vae(name, features, corrupted["data"], corrupted["mask"], args)
-    elif args.model == "fancy":
+    elif args.model.startswith("fancy"):
         model = train_fancy_imputer(name, features, corrupted["data"], corrupted["mask"], args)
     else:
         raise ValueError("Unknown model: {}".format(args.model))
@@ -191,6 +191,8 @@ if __name__ == "__main__":
     # fancy configs
     parser.add_argument("--fancy-method", default="IterativeImputer")
     parser.add_argument("--fancy-n-iter", default=10, type=int)
+    parser.add_argument("--fancy-svd-rank", default=10, type=int)
+    parser.add_argument("--fancy-knn-neighbors", default=5, type=int)
 
     args = parser.parse_args()
     fill_in_defaults(args)
