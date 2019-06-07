@@ -49,7 +49,7 @@ def main(args):
         configs = list(itertools.product(models, datasets, delete_percents, [args]))
 
         if args.parallel:
-            multiprocessing.Pool().map(cleanup, configs)
+            multiprocessing.Pool(args.jobs).map(cleanup, configs)
         elif args.opus:
             raise NotImplementedError("TODO(jpchen) make it easy to run this on opus")
             # Note this saves results to the file system.
@@ -75,6 +75,8 @@ if __name__ == "__main__":
                         help="On error, log to errors.log and continue")
     parser.add_argument("-p", "--parallel", action="store_true",
                         help="Run jobs in parallel using multiprocessing")
+    parser.add_argument("-j", "--jobs", type=int, default=multiprocessing.cpu_count(),
+                        help="Number of parallel jobs, if running in parallel")
     parser.add_argument("-o", "--opus", action="store_true",
                         help="Run jobs in parallel on opus")
     parser.add_argument("-t", "--smoketest", action="store_true")

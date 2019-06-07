@@ -72,6 +72,9 @@ def corrupt(data, mask, delete_prob=0, replace_prob=0):
                 assert col is True
                 col = ~delete_mask[i]
             corrupted_mask.append(col)
+            # This is not strictly necessary, but helps to avoid leakage.
+            corrupted_data[i] = corrupted_data[i].clone()
+            corrupted_data[i][~col] = 0
 
     # Replace random cells with random other cells.
     # This produces outliers that are difficult to detect.
