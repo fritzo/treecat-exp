@@ -257,19 +257,6 @@ CREDIT_SCHEMA = {
 }
 
 
-CREDIT_SUPPORTS = {
-    "SEX": (1, 2),
-    "EDUCATION": (0, 1, 2, 3, 4, 5, 6),
-    "MARRIAGE": (0, 1, 2, 3),
-    "PAY_0": (-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8),
-    "PAY_2": (-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8),
-    "PAY_3": (-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8),
-    "PAY_4": (-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8),
-    "PAY_5": (-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8),
-    "PAY_6": (-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8),
-}
-
-
 def load_credit(args):
     """
     See https://archive.ics.uci.edu/ml/datasets/default+of+credit+card+clients
@@ -300,24 +287,42 @@ def load_credit(args):
                 for row_number in range(1, sheet.nrows):  # ignore first row
                     writer.writerow(sheet.row_values(row_number))
 
+        names = list(sorted(CREDIT_SCHEMA))
+        num_cols = len(CREDIT_SCHEMA)
+        data = torch.zeros(num_rows, num_cols, dtype=torch.float)
+        positions = {name: pos for pos, name in enumerate(names)}
+        supports = {name: defaultdict(set)
+                    for name in names if CREDIT_SCHEMA[name] is Discrete}
         with open(raw_filename) as f:
             reader = csv.reader(f)
             header = [name.replace("\"", "").strip() for name in next(reader)]
             logging.debug(header)
-            num_cols = len(CREDIT_SCHEMA)
-            data = torch.zeros(num_rows, num_cols, dtype=torch.float)
-            names = list(sorted(CREDIT_SCHEMA))
-            positions = {name: pos for pos, name in enumerate(names)}
+            assert set(names) <= set(header), "invalid schema"
+            js = [positions.get(name) for name in header]
+            types = [CREDIT_SCHEMA.get(name) for name in header]
+            supps = [supports.get(name) for name in header]
             for i, row in enumerate(reader):
                 if i == num_rows:
                     break
-                for name, cell in zip(header, row):
-                    if name in positions:
-                        data[i, positions[name]] = float(cell)
+                for name, cell, typ, support, j in zip(header, row, types, supps, js):
+                    cell = float(cell)
+                    if typ is None or not cell:
+                        continue
+                    if typ is Real:
+                        value = cell
+                    else:
+                        value = support.setdefault(cell, len(support))
+                    data[i, j] = value
+        logging.debug("\n".join(
+            ["Cardinalities:"] +
+            ["{: >10} {}".format(len(support), name)
+             for name, support in sorted(supports.items())]))
+
         data = data[torch.randperm(len(data))].t().contiguous()
         dataset = {
             "names": names,
             "data": data,
+            "supports": supports,
             "args": args,
         }
         save_object(dataset, cache_filename)
@@ -325,16 +330,19 @@ def load_credit(args):
     # Format columns.
     features = []
     data = []
-    mask = []
     for name, col in zip(dataset["names"], dataset["data"]):
         typ = CREDIT_SCHEMA[name]
         if typ is Discrete:
-            feature = typ(name, len(CREDIT_SUPPORTS[name]))
+            cardinality = len(dataset["supports"][name])
+            if cardinality == 1:
+                logging.debug("Dropping trivial feature: {}".format(name))
+                continue
+            feature = typ(name, cardinality)
         else:
             feature = typ(name)
         features.append(feature)
-        data.append(col)
-        mask.append(True)
+        data.append(col.to(feature.dtype))
+    mask = [True] * len(features)
     return features, data, mask
 
 
@@ -593,30 +601,30 @@ def partition_data(data, mask, target_size):
     """
     Iterates over minibatches of data, attempting to make each minibatch as
     large as possible up to ``target_size``.
+
+    :param data: Either a single contiguous ``torch.Tensor``s or a
+        heterogeneous list of ``torch.Tensors``.
+    :param data: Either a single contiguous ``torch.Tensor``s or a
+        heterogeneous list of either ``torch.Tensors`` or bools.
     """
     assert len(data) == len(mask)
-    num_rows = next(col.size(0) for col in data if col is not None)
+    assert all(col is not None for col in data)
+    num_rows = len(data[0])
 
     begin = 0
     while begin < num_rows:
         end = begin + target_size
-        batch_data = []
-        batch_mask = []
 
-        for col_data, col_mask in zip(data, mask):
-            if isinstance(col_mask, torch.Tensor):
-                col_mask = col_mask[begin: end]
-                if col_mask.all():
-                    col_mask = True
-                elif not col_mask.any():
-                    col_mask = False
-                else:
-                    batch_data.append(col_data[begin: end])
-                    batch_mask.append(col_mask)
-                    continue
-            assert isinstance(col_mask, bool)
-            batch_data.append(col_data[begin: end] if col_mask else None)
-            batch_mask.append(col_mask)
+        if isinstance(data, torch.Tensor):
+            batch_data = data[:, begin: end]
+        else:
+            batch_data = [col[begin: end] for col in data]
+
+        if isinstance(mask, torch.Tensor):
+            batch_mask = mask[:, begin: end]
+        else:
+            batch_mask = [col if isinstance(col, bool) else col[begin: end]
+                          for col in mask]
 
         yield batch_data, batch_mask
         begin = end

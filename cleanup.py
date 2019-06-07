@@ -1,21 +1,24 @@
 from __future__ import absolute_import, division, print_function
 
 import argparse
+import datetime
 import logging
 import os
+import re
+import sys
 
 import pyro
 import torch
 from pyro.contrib.tabular import TreeCat
-from pyro.contrib.tabular.features import Real, Boolean, Discrete
+from pyro.contrib.tabular.features import Boolean, Discrete, Real
 
 from treecat_exp.config import fill_in_defaults
 from treecat_exp.corruption import corrupt
+from treecat_exp.fancy_impute import load_fancy_imputer, train_fancy_imputer
 from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.training import load_treecat, train_treecat
-from treecat_exp.util import CLEANUP, TEST, save_object, load_object, pdb_post_mortem, to_cuda
-from treecat_exp.fancy_impute import train_fancy_imputer, load_fancy_imputer
-from vae.vae import train_vae, load_vae, impute
+from treecat_exp.util import CLEANUP, TEST, load_object, pdb_post_mortem, save_object, to_cuda
+from vae.vae import load_vae, train_vae, impute
 
 
 def cleanup(name, features, data, mask, args):
@@ -104,15 +107,23 @@ def main(args):
             true_col = true_col[mask[i]]
             cleaned_col = cleaned_col[mask[i]]
         if isinstance(features[i], Real):
-            loss = (true_col - cleaned_col).pow(2).sum() / true_col.std()
+            loss = (true_col - cleaned_col).pow(2).sum().sqrt() / true_col.std()
         elif isinstance(features[i], (Boolean, Discrete)):
             loss = (true_col != cleaned_col).float().sum()
         else:
             raise ValueError("Unsupported feature type: {}".format(type(features[i])))
         num_cleaned.append((corrupted["mask"][i] != cleaned["mask"][i]).float().sum().item())
         losses.append(loss.item() / max(num_cleaned[-1], 1e-20))
+
+    mean_real_loss = torch.tensor([l for i, l in enumerate(losses) if isinstance(features[i], Real)]).mean()
+    mean_discrete_loss = torch.tensor([l for i, l in enumerate(losses) if isinstance(features[i], Discrete)]).mean()
+    mean_boolean_loss = torch.tensor([l for i, l in enumerate(losses) if isinstance(features[i], Boolean)]).mean()
+
     metrics = {
         "losses": losses,
+        "mean_real_loss": mean_real_loss,
+        "mean_boolean_loss": mean_boolean_loss,
+        "mean_discrete_loss": mean_discrete_loss,
         "num_cleaned": num_cleaned,
         "num_rows": len(data[0]),
         "num_cols": len(data),
@@ -161,6 +172,8 @@ if __name__ == "__main__":
     parser.add_argument("--seed", default=123456789, type=int)
     parser.add_argument("--cuda", action="store_true", default=False)
     parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("--pdb", action="store_true")
+    parser.add_argument("--log-errors", action="store_true")
 
     # Treecat configs
     parser.add_argument("-c", "--capacity", default=8, type=int)
@@ -187,5 +200,19 @@ if __name__ == "__main__":
     args = parser.parse_args()
     fill_in_defaults(args)
 
-    with pdb_post_mortem():
+    if args.pdb:
+        with pdb_post_mortem():
+            main(args)
+    elif args.log_errors:
+        try:
+            main(args)
+        except Exception as e:
+            logging.error("Job failed with error: {}\nSee errors.log".format(e))
+            with open("errors.log", "a") as f:
+                f.write("# The following command failed at {} with error:\n# {}\npython {}\n\n".format(
+                    datetime.datetime.now(),
+                    re.sub(r"\s+", " ", str(e)),
+                    " \\\n  ".join(a for a in sys.argv if a != "--log-errors")))
+            sys.exit(1)
+    else:
         main(args)

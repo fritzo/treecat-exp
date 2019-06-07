@@ -11,10 +11,15 @@ lint: FORCE
 test: FORCE lint
 	rm -rf temp.results.test
 	RESULTS=temp.results.test python train.py -n 1 -v
-	RESULTS=temp.results.test python cleanup.py -n 1 -m treecat
-	RESULTS=temp.results.test python cleanup.py -n 1 -m fancy
-	RESULTS=temp.results.test python cleanup.py -n 1 -m vae
-	RESULTS=temp.results.test python main.py --smoketest
+	RESULTS=temp.results.test python main.py --smoketest --pdb
+	rm -rf temp.results.test
+	@echo PASS
+
+# Parallel version of `make test`
+ptest: FORCE lint
+	rm -rf temp.results.test
+	RESULTS=temp.results.test python train.py -n 1 -v
+	RESULTS=temp.results.test python main.py --smoketest --parallel
 	rm -rf temp.results.test
 	@echo PASS
 
@@ -24,11 +29,11 @@ martintest: FORCE lint
 	rm -rf temp.results.test
 	@echo PASS
 
-train: FORCE
-	python train.py --default-config -v --dataset housing
-	python train.py --default-config -v --dataset news
-	python train.py --default-config -v --dataset census
-	python train.py --default-config -v --dataset lending
+cleanup-housing: FORCE
+	python main.py --datasets=housing --parallel --log-errors
+
+cleanup-credit: FORCE
+	python main.py --datasets=credit --parallel --log-errors
 
 experiments: FORCE
 	python main.py
