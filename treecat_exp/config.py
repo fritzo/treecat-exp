@@ -45,8 +45,32 @@ DEFAULT_CONFIG = {
     },
     "vae": {
         "housing": {
+            "learning_rate": 0.001,
+            "num_epochs": 100,
         },
         "credit": {
+            "learning_rate": 0.001,
+            "batch_size": 2000,
+            "num_epochs": 35,
+        },
+        "news": {
+            "learning_rate": 0.001,
+            "batch_size": 2045,
+            "num_epochs": 30,
+        },
+        "census": {
+            "batch_size": 8192,
+            "learning_rate": 0.001,
+            "num_epochs": 2,
+        },
+        "lending": {
+            "batch_size": 1440,
+            "learning_rate": 0.001,
+            "num_epochs": 2,
+        },
+    },
+    "vae_iter_impute": {
+        "housing": {
         },
         "news": {
         },
@@ -55,7 +79,10 @@ DEFAULT_CONFIG = {
         "lending": {
             "batch_size": 64,
             "learning_rate": 0.001,
+            "noise_lr": 0.001,
             "num_epochs": 2,
+        },
+        "credit": {
         },
     },
     "fancyii": {

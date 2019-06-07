@@ -45,13 +45,3 @@ def reconstruction_loss_function(reconstructed, original, variable_sizes, reduct
             loss += F.mse_loss(batch_reconstructed_variable, batch_target, reduction=reduction)
 
         return loss
-
-
-def to_cuda(x):
-    if isinstance(x, torch.Tensor) or isinstance(x, nn.Module):
-        return x.cuda()
-    if isinstance(x, list):
-        return [to_cuda(item) for item in x]
-    if x in (None, False, True):
-        return x
-    raise ValueError(x)

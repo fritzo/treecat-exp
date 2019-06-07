@@ -23,6 +23,12 @@ ptest: FORCE lint
 	rm -rf temp.results.test
 	@echo PASS
 
+test-vae: FORCE lint
+	rm -rf temp.results.test
+	RESULTS=temp.results.test python main.py --smoketest --models=vae --pdb
+	rm -rf temp.results.test
+	@echo PASS
+
 martintest: FORCE lint
 	rm -rf temp.results.test
 	RESULTS=temp.results.test python main.py --smoketest --models=fancyii,fancysvd,fancyknn

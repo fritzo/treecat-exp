@@ -10,8 +10,9 @@ from torch.optim import Adam
 from torch.nn import MSELoss
 
 from treecat_exp.preprocess import load_data, partition_data
-from treecat_exp.util import TRAIN, interrupt, pdb_post_mortem, save_object, load_object, to_dense
-from vae.util import to_cuda, reconstruction_loss_function
+from treecat_exp.util import TRAIN, interrupt, pdb_post_mortem, save_object, load_object, to_dense, to_cuda
+from treecat_exp.loss import reconstruction_loss_function
+from treecat_exp.whiten import Whitener
 from vae.multi import MultiOutput, SingleOutput, MultiInput
 
 from pdb import set_trace as bb
@@ -95,37 +96,38 @@ class VAE(nn.Module):
         return z, reconstructed, mu, log_var
 
 
-def impute(args):
-    vae, features, mask = None, None, None
-    loss_function = MSELoss()
+def impute(name, data, mask, args):
+    vae_model = load_vae(name)
+
+    data, mask = to_dense(data, mask)
+    if args.cuda and torch.cuda.is_available():
+        data = to_cuda(data)
+        mask = to_cuda(mask)
     inverted_mask = 1 - mask
-    observed = features * mask
-    missing = torch.randn_like(features)
+    observed = data * mask
+    missing = torch.randn_like(data)
 
     if args.noise_lr is not None:
-        missing = torch.randn_like(features, requires_grad=True)
+        missing = torch.randn_like(data, requires_grad=True)
         optim = Adam([missing], weight_decay=0, lr=args.noise_lr)
-
-    vae.train(mode=True)
-
-    for iteration in range(args.num_epochs):
+    for i in range(args.num_epochs):
         if args.noise_lr is not None:
             optim.zero_grad()
 
-        noisy_features = observed + missing * inverted_mask
-        _, reconstructed, _, _ = vae(noisy_features, training=True)
+        noisy_data = observed + missing * inverted_mask
+        _, reconstructed, _, _ = vae_model.vae(noisy_data, training=True)
+
+        if torch.isnan(reconstructed).any():
+            raise ValueError('reconstructed tensor has NaNs')
 
         observed_loss = reconstruction_loss_function(mask * reconstructed.clamp(min=0., max=1.),
-                                                     mask * features.clamp(min=0., max=1.),
+                                                     mask * data.clamp(min=0., max=1.),
                                                      None,  # multioutput
                                                      reduction="sum") / torch.sum(mask)
-        missing_loss = reconstruction_loss_function(inverted_mask * reconstructed.clamp(min=0., max=1.),
-                                                    inverted_mask * features.clamp(min=0., max=1.),
-                                                    None,  # multioutput
-                                                    reduction="sum") / torch.sum(mask)
-
-        masked = mask * features + (1. - mask) * reconstructed
-        loss = torch.sqrt(loss_function(masked, features))
+#         missing_loss = reconstruction_loss_function(inverted_mask * reconstructed.clamp(min=0., max=1.),
+#                                                     inverted_mask * data.clamp(min=0., max=1.),
+#                                                     None,  # multioutput
+#                                                     reduction="sum") / torch.sum(mask)
 
         if args.noise_lr is None:
             missing = reconstructed * inverted_mask
@@ -133,25 +135,32 @@ def impute(args):
             observed_loss.backward()
             optim.step()
 
+        if i % args.logging_interval == 0:
+            logging.info('epoch {} loss = {}'.format(i, observed_loss.item()))
+
         if observed_loss < args.tolerance:
             break
 
-        return observed_loss, missing_loss, loss
+        save_object(vae_model, os.path.join(TRAIN, "{}.model.pkl".format(name)))
+        return vae_model
 
 
 class VAEModel(object):
-    def __init__(self, vae):
+    def __init__(self, vae, whitener):
         self.vae = vae
+        self.whitener = whitener
 
     def sample(self, data, mask):
+        data = self.whitener.whiten(data, mask)
         data, mask = to_dense(data, mask)
         # TODO scale noise appropriately
         masked_data = data * mask + (1. - mask) * torch.randn(data.shape, device=mask.device)
-        out = self.vae(masked_data)
-        reconstruction = out[1]
-        return list(reconstruction.t())
+        reconstruction = self.vae(masked_data)[1]
+        unwhitened = self.whitener.unwhiten(list(reconstruction.t()), mask)
+        return unwhitened
 
     def log_prob(self, data, mask):
+        data = self.whitener.whiten(data, mask)
         data, mask = to_dense(data, mask)
         masked_data = data * mask + (1. - mask) * torch.randn(data.shape, device=mask.device)
         z, mu, log_var = self.vae.encoder(masked_data)
@@ -160,12 +169,14 @@ class VAEModel(object):
 
 
 def train_vae(name, features, data, mask, args):
+    whitener = Whitener(features, data, mask)
+    data = whitener.whiten(data, mask)
     torch.manual_seed(args.seed)
     if args.multi:
         raise NotImplementedError('MultiInput/output')
     else:
         vae = VAE(len(features), args.hidden_dim, [700, 128], [700, len(features)])
-    if args.cuda:
+    if args.cuda and torch.cuda.is_available():
         vae.cuda()
     optim = Adam(vae.parameters(), lr=args.learning_rate)
     losses = []
@@ -193,11 +204,12 @@ def train_vae(name, features, data, mask, args):
             epoch_loss += loss
             num_batches += 1
             if i % args.logging_interval == 0:
+                data_size = data[0].shape[0]
                 logging.info('[batch {}/{}]: loss = {}'
-                             .format((num_batches * args.batch_size),
-                                     data[0].shape[0],
+                             .format(min(num_batches * args.batch_size, data_size),
+                                     data_size,
                                      epoch_loss))
-    model = VAEModel(vae)
+    model = VAEModel(vae, whitener)
     save_object(model, os.path.join(TRAIN, "{}.model.pkl".format(name)))
     return model
 
@@ -231,5 +243,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
     logging.basicConfig(format="%(relativeCreated) 9d %(message)s",
                         level=logging.DEBUG if args.verbose else logging.INFO)
-    if args.impute:
-        impute(args)
