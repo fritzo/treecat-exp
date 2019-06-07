@@ -13,7 +13,7 @@ from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.util import TRAIN, interrupt, pdb_post_mortem, save_object, load_object, to_dense, to_cuda
 from treecat_exp.loss import reconstruction_loss_function
 from treecat_exp.whiten import Whitener
-from vae.multi import MultiOutput, SingleOutput, MultiInput
+from treecat_exp.vae.multi import MultiOutput, SingleOutput, MultiInput
 
 from pdb import set_trace as bb
 
