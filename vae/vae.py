@@ -12,6 +12,7 @@ from torch.nn import MSELoss
 from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.util import TRAIN, interrupt, pdb_post_mortem, save_object, load_object, to_dense, to_cuda
 from treecat_exp.loss import reconstruction_loss_function
+from treecat_exp.whiten import Whitener
 from vae.multi import MultiOutput, SingleOutput, MultiInput
 
 from pdb import set_trace as bb
@@ -145,18 +146,21 @@ def impute(name, data, mask, args):
 
 
 class VAEModel(object):
-    def __init__(self, vae):
+    def __init__(self, vae, whitener):
         self.vae = vae
+        self.whitener = whitener
 
     def sample(self, data, mask):
+        data = self.whitener.whiten(data, mask)
         data, mask = to_dense(data, mask)
         # TODO scale noise appropriately
         masked_data = data * mask + (1. - mask) * torch.randn(data.shape, device=mask.device)
-        out = self.vae(masked_data)
-        reconstruction = out[1]
-        return list(reconstruction.t())
+        reconstruction = self.vae(masked_data)[1]
+        unwhitened = self.whitener.unwhiten(list(reconstruction.t()), mask)
+        return unwhitened
 
     def log_prob(self, data, mask):
+        data = self.whitener.whiten(data, mask)
         data, mask = to_dense(data, mask)
         masked_data = data * mask + (1. - mask) * torch.randn(data.shape, device=mask.device)
         z, mu, log_var = self.vae.encoder(masked_data)
@@ -165,6 +169,8 @@ class VAEModel(object):
 
 
 def train_vae(name, features, data, mask, args):
+    whitener = Whitener(features, data, mask)
+    data = whitener.whiten(data, mask)
     torch.manual_seed(args.seed)
     if args.multi:
         raise NotImplementedError('MultiInput/output')
@@ -203,7 +209,7 @@ def train_vae(name, features, data, mask, args):
                              .format(min(num_batches * args.batch_size, data_size),
                                      data_size,
                                      epoch_loss))
-    model = VAEModel(vae)
+    model = VAEModel(vae, whitener)
     save_object(model, os.path.join(TRAIN, "{}.model.pkl".format(name)))
     return model
 

@@ -71,7 +71,6 @@ def cleanup(name, features, data, mask, args):
             batch_data = to_cuda(batch_data)
             batch_mask = to_cuda(batch_mask)
         with torch.no_grad():
-            # TODO(jpchen) Ensure all models support a .sample() method for imputation.
             batch_data = model.sample(batch_data, batch_mask)
         end = begin + len(batch_data[0])
         for cleaned_col, batch_col in zip(cleaned_data, batch_data):

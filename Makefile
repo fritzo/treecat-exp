@@ -23,9 +23,9 @@ ptest: FORCE lint
 	rm -rf temp.results.test
 	@echo PASS
 
-vae-test: FORCE lint
+test-vae: FORCE lint
 	rm -rf temp.results.test
-	RESULTS=temp.results.test python main.py --smoketest --models=vae
+	RESULTS=temp.results.test python main.py --smoketest --models=vae --pdb
 	rm -rf temp.results.test
 	@echo PASS
 
