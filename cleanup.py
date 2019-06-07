@@ -29,7 +29,7 @@ def cleanup(name, features, data, mask, args):
         cleaned = load_object(cleaned_filename)
         if args.model == "treecat":
             model = load_treecat(name)
-        elif args.model == "vae" or args.model == "vae_iter_impute":
+        elif args.model == "vae" or args.model == "iterative":
             model = load_vae(name)
         elif args.model == "fancy":
             model = load_fancy_imputer(name)
@@ -52,7 +52,7 @@ def cleanup(name, features, data, mask, args):
         model = train_treecat(name, features, corrupted["data"], corrupted["mask"], args)
     elif args.model == "vae":
         model = train_vae(name, features, corrupted["data"], corrupted["mask"], args)
-    elif args.model == "vae_iter_impute":
+    elif args.model == "iterative":
         train_vae(name, features, corrupted["data"], corrupted["mask"], args)
         # right now this using the train data, as opposed to a held out dataset
         model = impute(name, corrupted["data"], corrupted["mask"], args)
@@ -165,7 +165,7 @@ if __name__ == "__main__":
     parser.add_argument("--replace-percent", default=0, type=int)
     parser.add_argument("--dataset", default="housing")
     parser.add_argument("-r", "--max-num-rows", default=1000000000, type=int)
-    parser.add_argument("-m", "--model", default="treecat", help="{treecat, vae, vae_iter_impute, fancy}")
+    parser.add_argument("-m", "--model", default="treecat", help="{treecat, vae, iterative, fancy}")
     parser.add_argument('--default-config', dest='default_config', action='store_true')
     parser.add_argument('--custom-config', dest='default_config', action='store_false')
     parser.set_defaults(default_config=True)
