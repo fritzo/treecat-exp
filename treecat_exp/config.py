@@ -8,36 +8,36 @@ DEFAULT_CONFIG = {
     # and assessing convergence using train.ipynb .
     "treecat": {
         "housing": {
-            "capacity": 8,
+            "capacity": 16,
             "batch_size": 128,
             "learning_rate": 0.02,
             "annealing_rate": 0.02,
             "num_epochs": 100,
         },
         "credit": {
-            "capacity": 8,
+            "capacity": 32,
             "batch_size": 2000,
             "learning_rate": 0.02,
             "annealing_rate": 0.02,
             "num_epochs": 35,
         },
         "news": {
-            "capacity": 8,
+            "capacity": 32,
             "batch_size": 2048,
             "learning_rate": 0.02,
             "annealing_rate": 0.02,
             "num_epochs": 30,
         },
         "census": {
-            "capacity": 8,
-            "batch_size": 8192,
+            "capacity": 32,
+            "batch_size": 4096,
             "learning_rate": 0.02,
             "annealing_rate": 0.02,
             "num_epochs": 1,
         },
         "lending": {
-            "capacity": 16,
-            "batch_size": 1440,
+            "capacity": 32,
+            "batch_size": 2048,
             "learning_rate": 0.02,
             "annealing_rate": 0.02,
             "num_epochs": 1,
