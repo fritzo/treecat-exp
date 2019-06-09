@@ -1,7 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
-import torch
+import copy
 import logging
+
+import torch
 
 DEFAULT_CONFIG = {
     # These default values were determined by running train.py
@@ -30,14 +32,14 @@ DEFAULT_CONFIG = {
         },
         "census": {
             "capacity": 32,
-            "batch_size": 4096,
+            "batch_size": 6144,
             "learning_rate": 0.02,
             "annealing_rate": 0.02,
             "num_epochs": 1,
         },
         "lending": {
             "capacity": 32,
-            "batch_size": 2048,
+            "batch_size": 512,
             "learning_rate": 0.02,
             "annealing_rate": 0.02,
             "num_epochs": 1,
@@ -189,9 +191,21 @@ DEFAULT_CONFIG = {
 }
 
 
+# Add treecat variants with fixed capacity.
+def _():
+    for capacity in [8, 16, 32, 64]:
+        configs = copy.deepcopy(DEFAULT_CONFIG["treecat"])
+        for config in configs.values():
+            config["capacity"] = capacity
+        DEFAULT_CONFIG["treecat{}".format(capacity)] = configs
+
+
+_()
+
+
 def fill_in_defaults(args):
     """
-    Fills in default values defined in the global DEFALT_CONFIG dict.
+    Fills in default values defined in the global DEFAULT_CONFIG dict.
     """
     if args.default_config:
         if torch.cuda.is_available():

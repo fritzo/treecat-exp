@@ -89,7 +89,7 @@ def train_treecat(name, features, data, mask, args):
     logging.debug("Initializing {} model from {} rows".format(args.model, init_size))
     pyro.set_rng_seed(args.seed)
     pyro.get_param_store().clear()
-    if args.model == "treecat":
+    if args.model.startswith("treecat"):
         model = TreeCat(features, args.capacity, annealing_rate=args.annealing_rate)
     else:
         raise ValueError("Unknown model: {}".format(args.model))

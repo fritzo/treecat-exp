@@ -27,7 +27,7 @@ def cleanup(name, features, data, mask, args):
     if os.path.exists(cleaned_filename) and os.path.exists(corrupted_filename):
         corrupted = load_object(corrupted_filename)
         cleaned = load_object(cleaned_filename)
-        if args.model == "treecat":
+        if args.model.startswith("treecat"):
             model = load_treecat(name)
         elif args.model == "vae" or args.model == "iterative":
             model = load_vae(name)
@@ -48,7 +48,7 @@ def cleanup(name, features, data, mask, args):
     # Train model on corrupted data.
     # Models should implement methods .sample(data,mask) and .log_prob(data,mask).
     logging.debug("Training model on corrupted data")
-    if args.model == "treecat":
+    if args.model.startswith("treecat"):
         model = train_treecat(name, features, corrupted["data"], corrupted["mask"], args)
     elif args.model == "vae":
         model = train_vae(name, features, corrupted["data"], corrupted["mask"], args)

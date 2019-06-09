@@ -7,6 +7,8 @@ import multiprocessing
 import subprocess
 from sys import executable as python
 
+import numpy as np
+
 
 def cleanup(args):
     model, dataset, delete_percent, args = args
@@ -47,6 +49,7 @@ def main(args):
         datasets = args.datasets.split(",")
         delete_percents = [10] if args.smoketest else [10, 20, 33, 50, 67, 80, 90]
         configs = list(itertools.product(models, datasets, delete_percents, [args]))
+        np.random.shuffle(configs)  # improves load balancing
 
         if args.parallel:
             multiprocessing.Pool(args.jobs).map(cleanup, configs)
