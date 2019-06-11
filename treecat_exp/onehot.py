@@ -14,6 +14,8 @@ class OneHotEncoder(object):
         self.features = features
 
     def encode(self, data, mask):
+        assert isinstance(data, list)
+        assert isinstance(mask, list)
         assert len(data) == len(self.features)
         prototype = next(c for c in data if c is not None)
         result_data = []
@@ -34,6 +36,8 @@ class OneHotEncoder(object):
         return result_data, result_mask
 
     def decode(self, data, mask):
+        assert isinstance(data, list)
+        assert isinstance(mask, list)
         assert len(data) == len(mask)
         result_data = []
         result_mask = []

@@ -70,6 +70,12 @@ def to_dense(data, mask):
     return data, mask
 
 
+def to_list(x):
+    if not isinstance(x, torch.Tensor):
+        return x
+    return list(x.t())
+
+
 def to_cuda(x):
     """
     Moves Tensors to cuda; returns python objects unmodified.

@@ -48,7 +48,7 @@ DEFAULT_CONFIG = {
     "vae": {
         "housing": {
             "learning_rate": 0.001,
-            "num_epochs": 100,
+            "num_epochs": 200,
         },
         "credit": {
             "learning_rate": 0.001,
@@ -71,7 +71,7 @@ DEFAULT_CONFIG = {
             "num_epochs": 2,
         },
     },
-    "vae_iter_impute": {
+    "iterative": {
         "housing": {
         },
         "news": {

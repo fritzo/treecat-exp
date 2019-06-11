@@ -10,9 +10,10 @@ from torch.optim import Adam
 from torch.nn import MSELoss
 
 from treecat_exp.preprocess import load_data, partition_data
-from treecat_exp.util import TRAIN, interrupt, pdb_post_mortem, save_object, load_object, to_dense, to_cuda
+from treecat_exp.util import TRAIN, interrupt, pdb_post_mortem, save_object, load_object, to_dense, to_list, to_cuda
 from treecat_exp.loss import reconstruction_loss_function
 from treecat_exp.whiten import Whitener
+from treecat_exp.onehot import OneHotEncoder
 from treecat_exp.vae.multi import MultiOutput, SingleOutput, MultiInput
 
 from pdb import set_trace as bb
@@ -156,7 +157,7 @@ class VAEModel(object):
         # TODO scale noise appropriately
         masked_data = data * mask + (1. - mask) * torch.randn(data.shape, device=mask.device)
         reconstruction = self.vae(masked_data)[1]
-        unwhitened = self.whitener.unwhiten(list(reconstruction.t()), mask)
+        unwhitened = self.whitener.unwhiten(to_list(reconstruction), mask)
         return unwhitened
 
     def log_prob(self, data, mask):
@@ -169,17 +170,23 @@ class VAEModel(object):
 
 
 def train_vae(name, features, data, mask, args):
+    logging.basicConfig(format="%(relativeCreated) 9d %(message)s",
+                        level=logging.DEBUG if args.verbose else logging.INFO)
+
     whitener = Whitener(features, data, mask)
+    one_hot = OneHotEncoder(features)
     data = whitener.whiten(data, mask)
+    data, mask = one_hot.encode(data, mask)
     torch.manual_seed(args.seed)
     if args.multi:
         raise NotImplementedError('MultiInput/output')
     else:
-        vae = VAE(len(features), args.hidden_dim, [700, 128], [700, len(features)])
+        vae = VAE(len(features), args.hidden_dim, [700, 200], [700, len(features)])
     if args.cuda and torch.cuda.is_available():
         vae.cuda()
     optim = Adam(vae.parameters(), lr=args.learning_rate)
     losses = []
+    # CONVERT TO ONEHOT??
     for i in range(args.num_epochs):
         epoch_loss = 0
         num_batches = 0
@@ -191,8 +198,8 @@ def train_vae(name, features, data, mask, args):
                 batch_mask = to_cuda(batch_mask)
             _, reconstructed, mu, log_var = vae(batch_data)
             # reconstruction loss + KLD
-            reconstruction_loss = reconstruction_loss_function(batch_mask * reconstructed.clamp(min=0., max=1.),
-                                                               batch_mask * batch_data.clamp(min=0., max=1.),
+            reconstruction_loss = reconstruction_loss_function((batch_mask * reconstructed).clamp(min=0., max=1.),
+                                                               (batch_mask * batch_data).clamp(min=0., max=1.),
                                                                None,  # multioutput
                                                                reduction="sum") / torch.sum(batch_mask)
 
@@ -203,43 +210,20 @@ def train_vae(name, features, data, mask, args):
             losses.append(loss)
             epoch_loss += loss
             num_batches += 1
-            if i % args.logging_interval == 0:
-                data_size = data[0].shape[0]
-                logging.info('[batch {}/{}]: loss = {}'
-                             .format(min(num_batches * args.batch_size, data_size),
-                                     data_size,
-                                     epoch_loss))
+#             if num_batches % args.logging_interval == 0:
+#                 data_size = data[0].shape[0]
+#                 logging.info('[batch {}/{}]: loss = {}'
+#                              .format(min(num_batches * args.batch_size, data_size),
+#                                      data_size,
+#                                      epoch_loss))
+        if i % args.logging_interval == 0:
+            logging.info('epoch {}: loss = {}'
+                         .format(i, epoch_loss))
     model = VAEModel(vae, whitener)
+    logging.info("saving object to: {}/{}.model.pkl".format(TRAIN, name))
     save_object(model, os.path.join(TRAIN, "{}.model.pkl".format(name)))
     return model
 
 
 def load_vae(name):
     return load_object(os.path.join(TRAIN, "{}.model.pkl".format(name)))
-
-
-if __name__ == "__main__":
-    """
-    VAE imputation as implemented from Camino et al, 2018.
-    run from toplevel treecat/ directory
-    """
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", default="lending")
-    parser.add_argument("--max-num-rows", default=9999999999, type=int)
-    parser.add_argument("--iterative", action="store_true", default=False, help="iterative imputation")
-    parser.add_argument("-lr", "--learning-rate", default=0.01, type=float)
-    parser.add_argument("-nlr", "--noise-lr", default=0.001, type=float, help="noise lr (for iterative imputation)")
-    parser.add_argument("--tolerance", default=0.001, type=float, help="tolerance for iterative imputation")
-    parser.add_argument("-n", "--num-epochs", default=200, type=int)
-    parser.add_argument("-b", "--batch-size", default=64, type=int)
-    parser.add_argument("--hidden-dim", default=128, type=int)
-    parser.add_argument("--cuda", action="store_true", default=False)
-    parser.add_argument("--impute", action="store_true", default=False)
-    parser.add_argument("--multi", action="store_true", default=False,
-                        help="whether to use multi input/output per Camino et al (2018)")
-    parser.add_argument("-i", "--init-size", default=1000000000, type=int)
-    parser.add_argument("-v", "--verbose", action="store_true")
-    parser.add_argument("-l", "--logging-interval", default=10, type=int)
-    args = parser.parse_args()
-    logging.basicConfig(format="%(relativeCreated) 9d %(message)s",
-                        level=logging.DEBUG if args.verbose else logging.INFO)

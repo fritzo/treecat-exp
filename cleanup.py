@@ -174,18 +174,17 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("--pdb", action="store_true")
     parser.add_argument("--log-errors", action="store_true")
+    parser.add_argument("-n", "--num-epochs", default=100, type=int)
+    parser.add_argument("-b", "--batch-size", default=64, type=int)
 
     # Treecat configs
     parser.add_argument("-c", "--capacity", default=8, type=int)
     parser.add_argument("-lr", "--learning-rate", default=0.01, type=float)
     parser.add_argument("-ar", "--annealing-rate", default=0.01, type=float)
-    parser.add_argument("-n", "--num-epochs", default=100, type=int)
-    parser.add_argument("-b", "--batch-size", default=64, type=int)
     parser.add_argument("-i", "--init-size", default=1000000000, type=int)
 
     # VAE configs
     parser.add_argument("--hidden-dim", default=128, type=int)
-    parser.add_argument("--impute", action="store_true", default=False)
     parser.add_argument("--multi", action="store_true", default=False,
                         help="whether to use multi input/output per Camino et al (2018)")
     parser.add_argument("-nlr", "--noise-lr", default=0.001, type=float,
