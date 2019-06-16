@@ -83,66 +83,31 @@ class VAE(nn.Module):
         return z, reconstructed, mu, log_var
 
 
-def impute(name, data, mask, args):
-    vae_model = load_vae(name)
-
-    data, mask = to_dense(data, mask)
-    if args.cuda and torch.cuda.is_available():
-        data = to_cuda(data)
-        mask = to_cuda(mask)
-    inverted_mask = 1 - mask
-    observed = data * mask
-    missing = torch.randn_like(data)
-
-    if args.noise_lr is not None:
-        missing = torch.randn_like(data, requires_grad=True)
-        optim = Adam([missing], weight_decay=0, lr=args.noise_lr)
-    for i in range(args.num_epochs):
-        if args.noise_lr is not None:
-            optim.zero_grad()
-
-        noisy_data = observed + missing * inverted_mask
-        _, reconstructed, _, _ = vae_model.vae(noisy_data, training=True)
-
-        if torch.isnan(reconstructed).any():
-            raise ValueError('reconstructed tensor has NaNs')
-
-        observed_loss = reconstruction_loss_function(mask * reconstructed.clamp(min=0., max=1.),
-                                                     mask * data.clamp(min=0., max=1.),
-                                                     None,  # multioutput
-                                                     reduction="sum") / torch.sum(mask)
-#         missing_loss = reconstruction_loss_function(inverted_mask * reconstructed.clamp(min=0., max=1.),
-#                                                     inverted_mask * data.clamp(min=0., max=1.),
-#                                                     None,  # multioutput
-#                                                     reduction="sum") / torch.sum(mask)
-
-        if args.noise_lr is None:
-            missing = reconstructed * inverted_mask
-        else:
-            observed_loss.backward()
-            optim.step()
-
-        if i % args.logging_interval == 0:
-            logging.info('epoch {} loss = {}'.format(i, observed_loss.item()))
-
-        if observed_loss < args.tolerance:
-            break
-
-        save_object(vae_model, os.path.join(TRAIN, "{}.model.pkl".format(name)))
-        return vae_model
-
-
 class VAEModel(object):
     def __init__(self, vae, features, whitener):
         self.vae = vae
         self.one_hot = OneHotEncoder(features)
+        self.features = features
         self.whitener = whitener
 
-    def sample(self, data, mask):
+    def sample(self, data, mask, iterative=False):
         data = self.whitener.whiten(data, mask)
         data, mask = self.one_hot.encode(data, mask)
-        data, _ = to_dense(data, mask)
+        data, t_mask = to_dense(data, mask)
         reconstruction = self.vae(data)[1]
+        if iterative:
+            # Variational autoencoders for missing data imputation with application
+            # to simulated milling circuit. McCoy et al, 2018.
+
+            # TODO this can be moved upstream to be used with the other methods
+            # but not sure if the other methods will work correctly if the imputed
+            # values are filled in and the mask is removed (nothing is masked)
+            for i in range(10):
+                inverted_mask = 1. - t_mask
+                # fill in missing values with predicted reconstructed values
+                imputed_data = data * t_mask + inverted_mask * reconstruction
+                reconstruction = self.vae(imputed_data)[1]
+
         reconstruction, mask = self.one_hot.decode(to_list(reconstruction), mask)
         unwhitened = self.whitener.unwhiten(reconstruction, mask)
         return unwhitened

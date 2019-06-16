@@ -18,7 +18,7 @@ from treecat_exp.fancy_impute import load_fancy_imputer, train_fancy_imputer
 from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.training import load_treecat, train_treecat
 from treecat_exp.util import CLEANUP, TEST, diversity, load_object, pdb_post_mortem, save_object, to_cuda
-from treecat_exp.vae.vae import impute, load_vae, train_vae
+from treecat_exp.vae.vae import load_vae, train_vae
 
 
 def cleanup(name, features, data, mask, args):
@@ -29,7 +29,7 @@ def cleanup(name, features, data, mask, args):
         cleaned = load_object(cleaned_filename)
         if args.model.startswith("treecat"):
             model = load_treecat(name)
-        elif args.model == "vae" or args.model == "iterative":
+        elif args.model == "vae":
             model = load_vae(name)
         elif args.model.startswith("fancy"):
             model = load_fancy_imputer(name)
@@ -52,10 +52,6 @@ def cleanup(name, features, data, mask, args):
         model = train_treecat(name, features, corrupted["data"], corrupted["mask"], args)
     elif args.model == "vae":
         model = train_vae(name, features, corrupted["data"], corrupted["mask"], args)
-    elif args.model == "iterative":
-        train_vae(name, features, corrupted["data"], corrupted["mask"], args)
-        # right now this using the train data, as opposed to a held out dataset
-        model = impute(name, corrupted["data"], corrupted["mask"], args)
     elif args.model.startswith("fancy"):
         model = train_fancy_imputer(name, features, corrupted["data"], corrupted["mask"], args)
     else:
@@ -71,7 +67,10 @@ def cleanup(name, features, data, mask, args):
             batch_data = to_cuda(batch_data)
             batch_mask = to_cuda(batch_mask)
         with torch.no_grad():
-            batch_data = model.sample(batch_data, batch_mask)
+            if args.model == "vae":
+                batch_data = model.sample(batch_data, batch_mask, iterative=args.iterative)
+            else:
+                batch_data = model.sample(batch_data, batch_mask)
         end = begin + len(batch_data[0])
         for cleaned_col, batch_col in zip(cleaned_data, batch_data):
             cleaned_col[begin:end] = batch_col.cpu()
@@ -165,7 +164,7 @@ if __name__ == "__main__":
     parser.add_argument("--replace-percent", default=0, type=int)
     parser.add_argument("--dataset", default="housing")
     parser.add_argument("-r", "--max-num-rows", default=1000000000, type=int)
-    parser.add_argument("-m", "--model", default="treecat", help="{treecat, vae, iterative, fancy}")
+    parser.add_argument("-m", "--model", default="treecat", help="{treecat, vae, fancy}")
     parser.add_argument('--default-config', dest='default_config', action='store_true')
     parser.add_argument('--custom-config', dest='default_config', action='store_false')
     parser.set_defaults(default_config=True)
@@ -191,9 +190,11 @@ if __name__ == "__main__":
                         help="whether to use multi input/output per Camino et al (2018)")
     parser.add_argument("-nlr", "--noise-lr", default=0.001, type=float,
                         help="noise lr (for iterative imputation)")
-    parser.add_argument("--encoder-layer-sizes", default=[700, 200], type=list)
-    parser.add_argument("--decoder-layer-sizes", default=[700, 200], type=list)
+    parser.add_argument("--encoder-layer-sizes", default=[128, 64], type=list)
+    parser.add_argument("--decoder-layer-sizes", default=[128, 64], type=list)
     parser.add_argument("-l", "--logging-interval", default=10, type=int)
+    parser.add_argument("--iterative", action="store_true", default=False,
+                        help="whether to use iterative imputation")
     parser.add_argument("--tolerance", default=0.001, type=float, help="tolerance for iterative imputation")
 
     # fancy configs
