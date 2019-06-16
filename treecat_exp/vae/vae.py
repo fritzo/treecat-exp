@@ -20,14 +20,13 @@ from pdb import set_trace as bb
 
 
 class Decoder(nn.Module):
-    def __init__(self, z_dim, output_size, hidden_sizes=[], variable_sizes=None, temperature=None):
+    def __init__(self, z_dim, output_size, hidden_sizes=[]):
         super(Decoder, self).__init__()
-        hidden_activation = nn.Tanh()
         previous_layer_size = z_dim
         hidden_layers = []
         for layer_size in hidden_sizes:
             hidden_layers.append(nn.Linear(previous_layer_size, layer_size))
-            hidden_layers.append(hidden_activation)
+            hidden_layers.append(nn.ReLU())
             previous_layer_size = layer_size
 
         if len(hidden_layers) > 0:
@@ -35,10 +34,7 @@ class Decoder(nn.Module):
         else:
             self.hidden_layers = None
 
-        if variable_sizes is None:
-            self.output_layer = SingleOutput(previous_layer_size, output_size, activation=nn.Sigmoid())
-        else:
-            self.output_layer = MultiOutput(previous_layer_size, variable_sizes, temperature=temperature)
+        self.output_layer = SingleOutput(previous_layer_size, output_size, activation=nn.Sigmoid())
 
     def forward(self, code, training=False):
         if self.hidden_layers is None:
@@ -47,22 +43,16 @@ class Decoder(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, input_size, z_dim, hidden_sizes=[], variable_sizes=None):
+    def __init__(self, input_size, z_dim, hidden_sizes=[]):
         super(Encoder, self).__init__()
         layers = []
-        if variable_sizes is None:
-            previous_layer_size = input_size
-        else:
-            multi_input_layer = MultiInput(variable_sizes)
-            layers.append(multi_input_layer)
-            previous_layer_size = multi_input_layer.size
+        previous_layer_size = input_size
 
         layer_sizes = list(hidden_sizes) + [z_dim]
-        hidden_activation = nn.Tanh()
 
         for layer_size in layer_sizes:
             layers.append(nn.Linear(previous_layer_size, layer_size))
-            layers.append(hidden_activation)
+            layers.append(nn.ReLU())
             previous_layer_size = layer_size
 
         self.mu_layer = nn.Linear(z_dim, z_dim)
@@ -82,14 +72,10 @@ class Encoder(nn.Module):
 
 
 class VAE(nn.Module):
-    def __init__(self, input_size, z_dim, encoder_hidden_sizes=[], decoder_hidden_sizes=[],
-                 variable_sizes=None, temperature=None):
-
+    def __init__(self, input_size, z_dim, encoder_hidden_sizes=[], decoder_hidden_sizes=[]):
         super(VAE, self).__init__()
-
-        self.encoder = Encoder(input_size, z_dim, hidden_sizes=encoder_hidden_sizes, variable_sizes=variable_sizes)
-        self.decoder = Decoder(z_dim, input_size, hidden_sizes=decoder_hidden_sizes, variable_sizes=variable_sizes,
-                               temperature=temperature)
+        self.encoder = Encoder(input_size, z_dim, hidden_sizes=encoder_hidden_sizes)
+        self.decoder = Decoder(z_dim, input_size, hidden_sizes=decoder_hidden_sizes)
 
     def forward(self, inputs, training=False):
         z, mu, log_var = self.encoder(inputs)
@@ -147,24 +133,25 @@ def impute(name, data, mask, args):
 
 
 class VAEModel(object):
-    def __init__(self, vae, whitener):
+    def __init__(self, vae, features, whitener):
         self.vae = vae
+        self.one_hot = OneHotEncoder(features)
         self.whitener = whitener
 
     def sample(self, data, mask):
         data = self.whitener.whiten(data, mask)
-        data, mask = to_dense(data, mask)
-        # TODO scale noise appropriately
-        masked_data = data * mask + (1. - mask) * torch.randn(data.shape, device=mask.device)
-        reconstruction = self.vae(masked_data)[1]
-        unwhitened = self.whitener.unwhiten(to_list(reconstruction), mask)
+        data, mask = self.one_hot.encode(data, mask)
+        data, _ = to_dense(data, mask)
+        reconstruction = self.vae(data)[1]
+        reconstruction, mask = self.one_hot.decode(to_list(reconstruction), mask)
+        unwhitened = self.whitener.unwhiten(reconstruction, mask)
         return unwhitened
 
     def log_prob(self, data, mask):
         data = self.whitener.whiten(data, mask)
-        data, mask = to_dense(data, mask)
-        masked_data = data * mask + (1. - mask) * torch.randn(data.shape, device=mask.device)
-        z, mu, log_var = self.vae.encoder(masked_data)
+        data, mask = self.one_hot.encode(data, mask)
+        data, _ = to_dense(data, mask)
+        z, mu, log_var = self.vae.encoder(data)
         # TODO: correct?
         return torch.distributions.Normal(mu, (log_var / 2).exp()).log_prob(z).sum(-1)
 
@@ -172,7 +159,7 @@ class VAEModel(object):
 def train_vae(name, features, data, mask, args):
     logging.basicConfig(format="%(relativeCreated) 9d %(message)s",
                         level=logging.DEBUG if args.verbose else logging.INFO)
-
+    # normalize data
     whitener = Whitener(features, data, mask)
     one_hot = OneHotEncoder(features)
     data = whitener.whiten(data, mask)
@@ -181,26 +168,26 @@ def train_vae(name, features, data, mask, args):
     if args.multi:
         raise NotImplementedError('MultiInput/output')
     else:
-        vae = VAE(len(features), args.hidden_dim, [700, 200], [700, len(features)])
+        # len(data) > len(features) if discretes were one-hot encoded
+        vae = VAE(len(data), args.hidden_dim, args.encoder_layer_sizes, args.decoder_layer_sizes + [len(data)])
     if args.cuda and torch.cuda.is_available():
         vae.cuda()
     optim = Adam(vae.parameters(), lr=args.learning_rate)
     losses = []
-    # CONVERT TO ONEHOT??
     for i in range(args.num_epochs):
         epoch_loss = 0
         num_batches = 0
         for batch_data, batch_mask in partition_data(data, mask, args.batch_size):
+            optim.zero_grad()
             # preprocessing the data (TODO move this to preprocess.py)
             batch_data, batch_mask = to_dense(batch_data, batch_mask)
             if args.cuda and torch.cuda.is_available():
                 batch_data = to_cuda(batch_data)
                 batch_mask = to_cuda(batch_mask)
             _, reconstructed, mu, log_var = vae(batch_data)
-            # reconstruction loss + KLD
-            reconstruction_loss = reconstruction_loss_function((batch_mask * reconstructed).clamp(min=0., max=1.),
-                                                               (batch_mask * batch_data).clamp(min=0., max=1.),
-                                                               None,  # multioutput
+            reconstruction_loss = reconstruction_loss_function(batch_mask * reconstructed,
+                                                               batch_mask * batch_data,
+                                                               features,  # multioutput
                                                                reduction="sum") / torch.sum(batch_mask)
 
             kld = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
@@ -219,7 +206,7 @@ def train_vae(name, features, data, mask, args):
         if i % args.logging_interval == 0:
             logging.info('epoch {}: loss = {}'
                          .format(i, epoch_loss))
-    model = VAEModel(vae, whitener)
+    model = VAEModel(vae, features, whitener)
     logging.info("saving object to: {}/{}.model.pkl".format(TRAIN, name))
     save_object(model, os.path.join(TRAIN, "{}.model.pkl".format(name)))
     return model

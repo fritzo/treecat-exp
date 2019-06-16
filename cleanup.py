@@ -24,7 +24,7 @@ from treecat_exp.vae.vae import impute, load_vae, train_vae
 def cleanup(name, features, data, mask, args):
     corrupted_filename = os.path.join(CLEANUP, "{}.corrupted.pkl".format(name))
     cleaned_filename = os.path.join(CLEANUP, "{}.cleaned.pkl".format(name))
-    if os.path.exists(cleaned_filename) and os.path.exists(corrupted_filename):
+    if os.path.exists(cleaned_filename) and os.path.exists(corrupted_filename) and not args.clean:
         corrupted = load_object(corrupted_filename)
         cleaned = load_object(cleaned_filename)
         if args.model.startswith("treecat"):
@@ -37,7 +37,7 @@ def cleanup(name, features, data, mask, args):
             raise ValueError("Unknown model: {}".format(args.model))
         return corrupted, cleaned, model
 
-    # Currupt data.
+    # Corrupt data.
     logging.debug("Corrupting dataset")
     corrupted = corrupt(data, mask,
                         delete_prob=args.delete_percent / 100.,
@@ -176,6 +176,8 @@ if __name__ == "__main__":
     parser.add_argument("--log-errors", action="store_true")
     parser.add_argument("-n", "--num-epochs", default=100, type=int)
     parser.add_argument("-b", "--batch-size", default=64, type=int)
+    parser.add_argument("--clean", action="store_true", default=False,
+                        help="whether to run a fresh run (overwrite old results)")
 
     # Treecat configs
     parser.add_argument("-c", "--capacity", default=8, type=int)
@@ -189,6 +191,8 @@ if __name__ == "__main__":
                         help="whether to use multi input/output per Camino et al (2018)")
     parser.add_argument("-nlr", "--noise-lr", default=0.001, type=float,
                         help="noise lr (for iterative imputation)")
+    parser.add_argument("--encoder-layer-sizes", default=[700, 200], type=list)
+    parser.add_argument("--decoder-layer-sizes", default=[700, 200], type=list)
     parser.add_argument("-l", "--logging-interval", default=10, type=int)
     parser.add_argument("--tolerance", default=0.001, type=float, help="tolerance for iterative imputation")
 

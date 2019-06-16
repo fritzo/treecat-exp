@@ -31,6 +31,7 @@ def cleanup(args):
             "--batch-size=20",
             "--num-epochs=1",
             "--custom-config",
+            "--clean",
         ])
     print("#" * 80)
     print("  \\\n".join(command))
