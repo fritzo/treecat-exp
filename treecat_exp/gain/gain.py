@@ -62,8 +62,9 @@ class Discriminator(nn.Module):
 
 
 class GAINModel(object):
-    def __init__(self, gan, features, whitener):
-        self.gan = gan
+    def __init__(self, generator, discriminator, features, whitener):
+        self.generator = generator
+        self.discriminator = discriminator
         self.one_hot = OneHotEncoder(features)
         self.features = features
         self.whitener = whitener
@@ -72,7 +73,7 @@ class GAINModel(object):
         data = self.whitener.whiten(data, mask)
         data, mask = self.one_hot.encode(data, mask)
         data, t_mask = to_dense(data, mask)
-        reconstruction = self.vae(data)[1]
+        reconstruction = self.generator(data, t_mask)
         reconstruction, mask = self.one_hot.decode(to_list(reconstruction), mask)
         unwhitened = self.whitener.unwhiten(reconstruction, mask)
         return unwhitened
@@ -97,8 +98,10 @@ def train_gain(name, features, data, mask, args):
         generator.cuda()
     optim_g = SGD(generator.parameters(), lr=args.learning_rate)
     optim_d = SGD(discriminator.parameters(), lr=args.learning_rate)
-    losses = []
+    losses_g = []
+    losses_d = []
 
+    logging.info('TRAINING DISCRIMINATOR')
     for i in range(args.num_epochs):
         # first optimize the disc with a fixed gen
         epoch_loss = 0
@@ -118,16 +121,48 @@ def train_gain(name, features, data, mask, args):
             loss = F.binary_cross_entropy(pred, batch_mask)
             loss.backward()
             optim_d.step()
-            losses.append(loss)
+            losses_d.append(loss)
             epoch_loss += loss
             num_batches += 1
         if i % args.logging_interval == 0:
-            logging.info('epoch {}: loss = {}'
+            logging.info('[discriminator] epoch {}: loss = {}'
                          .format(i, epoch_loss))
-    # then train generator against trained discriminator
+
+    logging.info('TRAINING GENERATOR')
     for i in range(args.num_epochs):
-        pass
-    model = GAINModel(gain, features, whitener)
+        # then train generator against trained discriminator
+        epoch_loss = 0
+        num_batches = 0
+        for batch_data, batch_mask in partition_data(data, mask, args.batch_size):
+            optim_g.zero_grad()
+            # preprocessing the data (TODO move this to preprocess.py)
+            batch_data, batch_mask = to_dense(batch_data, batch_mask)
+            hint = generate_hint(batch_mask, features, args.hint, args.hint_method)
+
+            if args.cuda and torch.cuda.is_available():
+                batch_data = to_cuda(batch_data)
+                batch_mask = to_cuda(batch_mask)
+                hint = to_cuda(hint)
+            with torch.no_grad():
+                gen_data = generator(batch_data, batch_mask)
+            pred = discriminator(gen_data, hint)
+
+            # we want to fool the discriminator now
+            loss = F.binary_cross_entropy(pred, 1 - batch_mask)
+            # TODO downweight the reconstruction loss term as hyperparam
+            loss += reconstruction_loss_function(batch_mask * gen_data,
+                                                 batch_mask * batch_data,
+                                                 features,
+                                                 reduction="sum") / torch.sum(batch_mask)
+            loss.backward()
+            optim_g.step()
+            losses_g.append(loss)
+            epoch_loss += loss
+            num_batches += 1
+        if i % args.logging_interval == 0:
+            logging.info('[generator] epoch {}: loss = {}'
+                         .format(i, epoch_loss))
+    model = GAINModel(generator, discriminator, features, whitener)
     logging.info("saving object to: {}/{}.model.pkl".format(TRAIN, name))
     save_object(model, os.path.join(TRAIN, "{}.model.pkl".format(name)))
     return model
