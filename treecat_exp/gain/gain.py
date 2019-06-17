@@ -14,7 +14,7 @@ from treecat_exp.util import TRAIN, interrupt, pdb_post_mortem, save_object, loa
 from treecat_exp.loss import reconstruction_loss_function, generate_hint
 from treecat_exp.whiten import Whitener
 from treecat_exp.onehot import OneHotEncoder
-from treecat_exp.vae.multi import MultiOutput, SingleOutput, MultiInput
+from treecat_exp.vae.multi import SingleOutput
 
 from pdb import set_trace as bb
 
@@ -107,14 +107,14 @@ def train_gain(name, features, data, mask, args):
             optim_d.zero_grad()
             # preprocessing the data (TODO move this to preprocess.py)
             batch_data, batch_mask = to_dense(batch_data, batch_mask)
-            hint = generate_hint(batch_mask, features, args.hint)
+            hint = generate_hint(batch_mask, features, args.hint, args.hint_method)
             if args.cuda and torch.cuda.is_available():
                 batch_data = to_cuda(batch_data)
                 batch_mask = to_cuda(batch_mask)
                 hint = to_cuda(hint)
-            hint_mask = (1 - batch_mask) * hint + 0.5 * (1 - hint)
-            bb()
-            pred = discriminator(batch_data, hint_mask)
+            with torch.no_grad():
+                gen_data = generator(batch_data, batch_mask)
+            pred = discriminator(gen_data, hint)
             loss = F.binary_cross_entropy(pred, batch_mask)
             loss.backward()
             optim_d.step()
@@ -124,7 +124,6 @@ def train_gain(name, features, data, mask, args):
         if i % args.logging_interval == 0:
             logging.info('epoch {}: loss = {}'
                          .format(i, epoch_loss))
-    raise NotImplementedError
     # then train generator against trained discriminator
     for i in range(args.num_epochs):
         pass
