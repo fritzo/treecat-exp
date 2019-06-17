@@ -14,7 +14,6 @@ from treecat_exp.util import TRAIN, interrupt, pdb_post_mortem, save_object, loa
 from treecat_exp.loss import reconstruction_loss_function
 from treecat_exp.whiten import Whitener
 from treecat_exp.onehot import OneHotEncoder
-from treecat_exp.vae.multi import MultiOutput, SingleOutput, MultiInput
 
 from pdb import set_trace as bb
 
@@ -33,8 +32,6 @@ class Decoder(nn.Module):
             self.hidden_layers = nn.Sequential(*hidden_layers)
         else:
             self.hidden_layers = None
-
-        self.output_layer = SingleOutput(previous_layer_size, output_size, activation=nn.Sigmoid())
 
     def forward(self, code, training=False):
         if self.hidden_layers is None:
@@ -130,11 +127,8 @@ def train_vae(name, features, data, mask, args):
     data = whitener.whiten(data, mask)
     data, mask = one_hot.encode(data, mask)
     torch.manual_seed(args.seed)
-    if args.multi:
-        raise NotImplementedError('MultiInput/output')
-    else:
-        # len(data) > len(features) if discretes were one-hot encoded
-        vae = VAE(len(data), args.hidden_dim, args.encoder_layer_sizes, args.decoder_layer_sizes + [len(data)])
+    # len(data) > len(features) if discretes were one-hot encoded
+    vae = VAE(len(data), args.hidden_dim, args.encoder_layer_sizes, args.decoder_layer_sizes + [len(data)])
     if args.cuda and torch.cuda.is_available():
         vae.cuda()
     optim = Adam(vae.parameters(), lr=args.learning_rate)
@@ -152,7 +146,7 @@ def train_vae(name, features, data, mask, args):
             _, reconstructed, mu, log_var = vae(batch_data)
             reconstruction_loss = reconstruction_loss_function(batch_mask * reconstructed,
                                                                batch_mask * batch_data,
-                                                               features,  # multioutput
+                                                               features,
                                                                reduction="sum") / torch.sum(batch_mask)
 
             kld = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())

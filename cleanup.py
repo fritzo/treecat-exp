@@ -18,7 +18,7 @@ from treecat_exp.fancy_impute import load_fancy_imputer, train_fancy_imputer
 from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.training import load_treecat, train_treecat
 from treecat_exp.util import CLEANUP, TEST, diversity, load_object, pdb_post_mortem, save_object, to_cuda
-from treecat_exp.vae.vae import load_vae, train_vae
+from treecat_exp.vae import load_vae, train_vae
 
 
 def cleanup(name, features, data, mask, args):
