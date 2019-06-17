@@ -69,7 +69,7 @@ if __name__ == "__main__":
     parser.add_argument("--experiments", help="list of experiments to run",
                         default="cleanup")
     parser.add_argument("--models", help="list of models to train",
-                        default="fancyii,fancysvd,fancyknn,treecat,vae")
+                        default="fancyii,fancysvd,fancyknn,treecat,vae,gain")
     parser.add_argument("--datasets", help="list of datasets",
                         default="housing,credit,news,census,lending")
     parser.add_argument("-v", "--verbose", action="store_true")
