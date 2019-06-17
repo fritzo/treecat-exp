@@ -14,7 +14,6 @@ from treecat_exp.util import TRAIN, interrupt, pdb_post_mortem, save_object, loa
 from treecat_exp.loss import reconstruction_loss_function, generate_hint
 from treecat_exp.whiten import Whitener
 from treecat_exp.onehot import OneHotEncoder
-from treecat_exp.vae.multi import SingleOutput
 
 from pdb import set_trace as bb
 
@@ -25,22 +24,22 @@ Yoon, et al. GAIN: Missing Data Imputation using Generative Adversarial Nets. 20
 
 
 class Generator(nn.Module):
-    def __init__(self, size, hidden_sizes=[], mask_variables=False, temperature=None):
+    def __init__(self, out_size, hidden_sizes=[], mask_variables=False, temperature=None):
         super(Generator, self).__init__()
         self.multi_input_layer = None
-        previous_layer_size = size * 2
+        previous_layer_size = out_size * 2
         hidden_layers = []
         for layer_size in hidden_sizes:
             hidden_layers.append(nn.Linear(previous_layer_size, layer_size))
             hidden_layers.append(nn.Tanh())
             previous_layer_size = layer_size
+        hidden_layers.append(nn.Linear(previous_layer_size, out_size))
+        hidden_layers.append(nn.Sigmoid())
         self.hidden_layers = nn.Sequential(*hidden_layers)
-        self.output_layer = SingleOutput(previous_layer_size, size, activation=nn.Sigmoid())
 
     def forward(self, inputs, mask, training=False):
         inputs = torch.cat((inputs, mask), dim=1)
-        outputs = self.hidden_layers(inputs)
-        return self.output_layer(outputs, training=training)
+        return self.hidden_layers(inputs)
 
 
 class Discriminator(nn.Module):
