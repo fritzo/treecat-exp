@@ -25,13 +25,10 @@ class Decoder(nn.Module):
         hidden_layers = []
         for layer_size in hidden_sizes:
             hidden_layers.append(nn.Linear(previous_layer_size, layer_size))
-            hidden_layers.append(nn.ReLU())
+            hidden_layers.append(nn.Tanh())
             previous_layer_size = layer_size
 
-        if len(hidden_layers) > 0:
-            self.hidden_layers = nn.Sequential(*hidden_layers)
-        else:
-            self.hidden_layers = None
+        self.hidden_layers = nn.Sequential(*hidden_layers)
 
     def forward(self, code, training=False):
         if self.hidden_layers is None:
@@ -49,7 +46,7 @@ class Encoder(nn.Module):
 
         for layer_size in layer_sizes:
             layers.append(nn.Linear(previous_layer_size, layer_size))
-            layers.append(nn.ReLU())
+            layers.append(nn.Tanh())
             previous_layer_size = layer_size
 
         self.mu_layer = nn.Linear(z_dim, z_dim)

@@ -49,53 +49,37 @@ DEFAULT_CONFIG = {
         "housing": {
             "learning_rate": 0.001,
             "batch_size": 128,
-            "num_epochs": 80,
+            "num_epochs": 100,
             "encoder_layer_sizes": [120, 64],
             "decoder_layer_sizes": [120, 64],
         },
         "credit": {
             "learning_rate": 0.001,
             "batch_size": 128,
-            "num_epochs": 80,
+            "num_epochs": 100,
             "encoder_layer_sizes": [200, 64],
             "decoder_layer_sizes": [200, 64],
         },
         "news": {
             "learning_rate": 0.001,
             "batch_size": 1000,
-            "num_epochs": 80,
+            "num_epochs": 100,
             "encoder_layer_sizes": [120, 64],
             "decoder_layer_sizes": [120, 64],
         },
         "census": {
             "batch_size": 2000,
             "learning_rate": 0.001,
-            "num_epochs": 80,
+            "num_epochs": 100,
             "encoder_layer_sizes": [180, 64],
             "decoder_layer_sizes": [180, 64],
         },
         "lending": {
             "batch_size": 1000,
             "learning_rate": 0.001,
-            "num_epochs": 80,
+            "num_epochs": 100,
             "encoder_layer_sizes": [120, 64],
             "decoder_layer_sizes": [120, 64],
-        },
-    },
-    "iterative": {
-        "housing": {
-        },
-        "news": {
-        },
-        "census": {
-        },
-        "lending": {
-            "batch_size": 64,
-            "learning_rate": 0.001,
-            "noise_lr": 0.001,
-            "num_epochs": 2,
-        },
-        "credit": {
         },
     },
     "fancyii": {
