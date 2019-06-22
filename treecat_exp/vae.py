@@ -137,6 +137,7 @@ def train_vae(name, features, data, mask, args):
     for i in range(args.num_epochs):
         epoch_loss = 0
         num_batches = 0
+        stop = True
         for batch_data, batch_mask in partition_data(data, mask, args.batch_size):
             optim.zero_grad()
             # preprocessing the data (TODO move this to preprocess.py)
@@ -146,33 +147,35 @@ def train_vae(name, features, data, mask, args):
                 batch_mask = to_cuda(batch_mask)
 
             _, reconstructed, mu, log_var = vae(batch_data, training=True)
-            # reconstruction loss only on the observed values
+            # reconstruction loss per data only on the observed values
             reconstruction_loss = reconstruction_loss_function(batch_mask * reconstructed,
                                                                batch_mask * batch_data,
                                                                features,
                                                                reduction="sum") / torch.sum(batch_mask)
             # fixed N(0,1) prior
             kld = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
-#             loss = reconstruction_loss + kld
-            loss = reconstruction_loss + 0.0005 * kld
-            if i % 200 == 0:
-                print(reconstructed)
-                print(batch_data)
-                print(batch_mask * ((batch_data - reconstructed) / batch_data).abs())
-                print("loss", reconstruction_loss)
-                print("kld", kld)
+            # scale kl by hyperparam
+            loss = reconstruction_loss + args.kl_factor * kld
+            if i % 10 == 0 and i != 0 and stop and args.verbose:
+                inverted_mask = 1 - batch_mask
+                imputation_loss = reconstruction_loss_function(inverted_mask * reconstructed,
+                                                               inverted_mask * batch_data,
+                                                               features,
+                                                               reduction="sum") / torch.sum(inverted_mask)
+#                 print(reconstructed)
+#                 print(batch_data)
+#                 print(batch_mask * (batch_data - reconstructed).abs())
+                logging.debug("Epoch {}".format(i))
+                logging.debug("recon_loss = {}".format(reconstruction_loss.item()))
+                logging.debug("kld = {}".format((args.kl_factor * kld).item()))
+                logging.debug("imputation loss = {}".format(imputation_loss.item()))
+                stop = False
                 bb()
             loss.backward()
             optim.step()
             losses.append(loss)
             epoch_loss += loss
             num_batches += 1
-#             if num_batches % args.logging_interval == 0:
-#                 data_size = data[0].shape[0]
-#                 logging.info('[batch {}/{}]: loss = {}'
-#                              .format(min(num_batches * args.batch_size, data_size),
-#                                      data_size,
-#                                      epoch_loss))
         if i % args.logging_interval == 0:
             logging.info('epoch {}: loss = {}'
                          .format(i, epoch_loss / num_batches))

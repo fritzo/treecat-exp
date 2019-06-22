@@ -185,7 +185,7 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--init-size", default=1000000000, type=int)
 
     # VAE configs
-    parser.add_argument("--hidden-dim", default=128, type=int)
+    parser.add_argument("--hidden-dim", default=64, type=int)
     parser.add_argument("--multi", action="store_true", default=False,
                         help="whether to use multi input/output per Camino et al (2018)")
     parser.add_argument("-nlr", "--noise-lr", default=0.001, type=float,
@@ -193,6 +193,7 @@ if __name__ == "__main__":
     parser.add_argument("--encoder-layer-sizes", default=[128, 64], type=list)
     parser.add_argument("--decoder-layer-sizes", default=[128, 64], type=list)
     parser.add_argument("-l", "--logging-interval", default=10, type=int)
+    parser.add_argument("--kl-factor", default=0.001, type=int)
     parser.add_argument("--iterative", action="store_true", default=False,
                         help="whether to use iterative imputation")
     parser.add_argument("--tolerance", default=0.001, type=float, help="tolerance for iterative imputation")
