@@ -138,10 +138,10 @@ def train_vae(name, features, data, mask, args):
         epoch_loss = 0
         num_batches = 0
         stop = True
-        for batch_data, batch_mask in partition_data(data, mask, args.batch_size):
+        for batch_data_list, batch_mask_list in partition_data(data, mask, args.batch_size):
             optim.zero_grad()
             # preprocessing the data (TODO move this to preprocess.py)
-            batch_data, batch_mask = to_dense(batch_data, batch_mask)
+            batch_data, batch_mask = to_dense(batch_data_list, batch_mask_list)
             if args.cuda and torch.cuda.is_available():
                 batch_data = to_cuda(batch_data)
                 batch_mask = to_cuda(batch_mask)
@@ -156,10 +156,13 @@ def train_vae(name, features, data, mask, args):
             kld = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
             # scale kl by hyperparam
             loss = reconstruction_loss + args.kl_factor * kld
-            if i % 10 == 0 and i != 0 and stop and args.verbose:
+            if i % 10 == 0 and stop and args.verbose:
                 inverted_mask = 1 - batch_mask
+                missing_data = torch.stack([x.float() for x in batch_data_list], -1)
+                if args.cuda:
+                    missing_data = to_cuda(missing_data)
                 imputation_loss = reconstruction_loss_function(inverted_mask * reconstructed,
-                                                               inverted_mask * batch_data,
+                                                               inverted_mask * missing_data,
                                                                features,
                                                                reduction="sum") / torch.sum(inverted_mask)
 #                 print(reconstructed)
