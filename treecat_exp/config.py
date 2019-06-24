@@ -61,7 +61,7 @@ DEFAULT_CONFIG = {
             "encoder_layer_sizes": [200, 64],
             "decoder_layer_sizes": [200, 64],
             "max_num_rows": 100000,
-            "kl_factor": 5e-4,
+            "kl_factor": 1e-4,
         },
         "news": {
             "learning_rate": 0.001,
@@ -69,7 +69,7 @@ DEFAULT_CONFIG = {
             "num_epochs": 80,
             "encoder_layer_sizes": [120, 64],
             "decoder_layer_sizes": [120, 64],
-            "kl_factor": 5e-4,
+            "kl_factor": 1e-4,
         },
         "census": {
             "batch_size": 1000,
@@ -78,7 +78,7 @@ DEFAULT_CONFIG = {
             "encoder_layer_sizes": [180, 64],
             "decoder_layer_sizes": [180, 64],
             # "max_num_rows": 100000,
-            "kl_factor": 5e-4,
+            "kl_factor": 1e-4,
         },
         "lending": {
             "batch_size": 1000,
@@ -86,7 +86,7 @@ DEFAULT_CONFIG = {
             "num_epochs": 500,
             "encoder_layer_sizes": [120, 64],
             "decoder_layer_sizes": [120, 64],
-            "kl_factor": 5e-4,
+            "kl_factor": 1e-4,
         },
     },
     "fancyii": {

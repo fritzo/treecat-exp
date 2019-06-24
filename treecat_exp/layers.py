@@ -11,7 +11,8 @@ class MixedActivation(nn.Module):
     """
     output activation layer that usese:
     1) gumbel softmax for discrete
-    2) sigmoid for real
+    2) sigmoid softmax for boolean
+    3) tanh for real
     """
     def __init__(self):
         super(MixedActivation, self).__init__()
@@ -34,7 +35,7 @@ class MixedActivation(nn.Module):
                 data_index += f.cardinality
             elif isinstance(f, Boolean):
                 # discrete variable with cardinality = 1
-                out = F.gumbel_softmax(inputs[:, data_index], hard=not training, dim=0)
+                out = torch.sigmoid(inputs[:, data_index])
                 assert len(out) == len(inputs)
                 output.append(out.unsqueeze(1))
                 data_index += 1

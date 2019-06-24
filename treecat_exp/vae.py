@@ -28,8 +28,6 @@ class Decoder(nn.Module):
         for i, layer_size in enumerate(hidden_sizes):
             hidden_layers.append(nn.Linear(previous_layer_size, layer_size))
             if i < len(hidden_sizes) - 1:
-                # dont add a nonlinearity to the last layer
-                # since this will be handled in reconstruction_loss_function
                 hidden_layers.append(nn.Tanh())
             previous_layer_size = layer_size
         self.out_layer = MixedActivation()
@@ -165,15 +163,13 @@ def train_vae(name, features, data, mask, args):
                                                                inverted_mask * missing_data,
                                                                features,
                                                                reduction="sum") / torch.sum(inverted_mask)
-#                 print(reconstructed)
-#                 print(batch_data)
-#                 print(batch_mask * (batch_data - reconstructed).abs())
                 logging.debug("Epoch {}".format(i))
                 logging.debug("recon_loss = {}".format(reconstruction_loss.item()))
                 logging.debug("kld = {}".format((args.kl_factor * kld).item()))
                 logging.debug("imputation loss = {}".format(imputation_loss.item()))
                 stop = False
-                bb()
+#                 bb()
+
             loss.backward()
             optim.step()
             losses.append(loss)
