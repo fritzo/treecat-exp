@@ -17,7 +17,7 @@ class MixedActivation(nn.Module):
     def __init__(self):
         super(MixedActivation, self).__init__()
 
-    def forward(self, inputs, features, training=False):
+    def forward(self, inputs, features, training=False, gumbel=True):
         """
         if training == true, output softmax.
         else input the argmax
@@ -28,9 +28,13 @@ class MixedActivation(nn.Module):
         for f in features:
             if isinstance(f, Discrete):
                 # discrete variable
-                out = F.gumbel_softmax(inputs[:, data_index:data_index + f.cardinality],
-                                       hard=not training,
-                                       dim=-1)
+                if gumbel:
+                    out = F.gumbel_softmax(inputs[:, data_index:data_index + f.cardinality],
+                                           hard=not training,
+                                           dim=-1)
+                else:
+                    out = F.softmax(inputs[:, data_index:data_index + f.cardinality],
+                                    dim=-1)
                 output.append(out)
                 data_index += f.cardinality
             elif isinstance(f, Boolean):

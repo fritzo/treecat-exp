@@ -55,14 +55,14 @@ DEFAULT_CONFIG = {
         },
         "credit": {
             # NaNs
-            "learning_rate": 0.001,
+            "learning_rate": 0.01,
             "batch_size": 1000,
-            "num_epochs": 20,
+            "num_epochs": 200,
             "gen_layer_sizes": [120, 64],
             "disc_layer_sizes": [120, 64],
         },
         "news": {
-            "learning_rate": 0.001,
+            "learning_rate": 0.01,
             "batch_size": 1000,
             "num_epochs": 100,
             "gen_layer_sizes": [120, 64],
@@ -71,19 +71,19 @@ DEFAULT_CONFIG = {
         "census": {
             # untested
             "batch_size": 1000,
-            "learning_rate": 0.001,
-            "num_epochs": 2,
+            "learning_rate": 0.01,
+            "num_epochs": 10,
             "gen_layer_sizes": [180, 64],
             "disc_layer_sizes": [180, 64],
-            # "max_num_rows": 100000,
+            "max_num_rows": 100000,
         },
         "lending": {
             "batch_size": 1000,
-            "learning_rate": 0.001,
-            "num_epochs": 5,
+            "learning_rate": 0.01,
+            "num_epochs": 10,
             "gen_layer_sizes": [120, 64],
             "disc_layer_sizes": [120, 64],
-            # "max_num_rows": 100000,
+            "max_num_rows": 100000,
         },
     },
     "vae": {
@@ -101,7 +101,6 @@ DEFAULT_CONFIG = {
             "num_epochs": 50,
             "encoder_layer_sizes": [200, 64],
             "decoder_layer_sizes": [200, 64],
-            "max_num_rows": 100000,
             "kl_factor": 1e-4,
         },
         "news": {

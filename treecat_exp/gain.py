@@ -25,7 +25,7 @@ Yoon, et al. GAIN: Missing Data Imputation using Generative Adversarial Nets. 20
 
 
 class Generator(nn.Module):
-    def __init__(self, out_size, hidden_sizes, features, mask_variables=False, temperature=None):
+    def __init__(self, out_size, hidden_sizes, features):
         super(Generator, self).__init__()
         self.features = features
         previous_layer_size = out_size * 2
@@ -41,7 +41,7 @@ class Generator(nn.Module):
     def forward(self, inputs, mask, training=False):
         inputs = torch.cat((inputs, mask), dim=1)
         hidden = self.hidden_layers(inputs)
-        return self.out_layer(hidden, self.features, training=training)
+        return self.out_layer(hidden, self.features, training=training, gumbel=False)
 
     def impute(self, inputs, mask, training=False):
         """
@@ -49,7 +49,7 @@ class Generator(nn.Module):
         """
         out = self(inputs, mask, training=training)
         # fill in missing values with predicted reconstructed values
-        out += mask * (inputs - out)
+        out = out + mask * (inputs - out)
         return out
 
 
@@ -130,7 +130,7 @@ def train_gain(name, features, data, mask, args):
                 gen_data = generator.impute(batch_data, batch_mask, training=True)
             if torch.isnan(gen_data).any().item():
                 logging.debug("NaN in generated data")
-                bb()
+
             pred = discriminator(gen_data, hint)
             loss = F.binary_cross_entropy(pred, batch_mask)
             loss.backward()
