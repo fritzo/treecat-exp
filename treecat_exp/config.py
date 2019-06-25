@@ -59,7 +59,7 @@ DEFAULT_CONFIG = {
             "num_epochs": 50,
             "gen_layer_sizes": [200, 64],
             "disc_layer_sizes": [200, 64],
-            "max_num_rows": 100000,
+            # "max_num_rows": 100000,
         },
         "news": {
             "learning_rate": 0.001,

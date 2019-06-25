@@ -14,6 +14,7 @@ from treecat_exp.util import TRAIN, interrupt, pdb_post_mortem, save_object, loa
 from treecat_exp.loss import reconstruction_loss_function, generate_hint
 from treecat_exp.whiten import Whitener
 from treecat_exp.onehot import OneHotEncoder
+from treecat_exp.layers import MixedActivation
 
 from pdb import set_trace as bb
 
@@ -24,9 +25,9 @@ Yoon, et al. GAIN: Missing Data Imputation using Generative Adversarial Nets. 20
 
 
 class Generator(nn.Module):
-    def __init__(self, out_size, hidden_sizes=[], mask_variables=False, temperature=None):
+    def __init__(self, out_size, hidden_sizes, features, mask_variables=False, temperature=None):
         super(Generator, self).__init__()
-        self.multi_input_layer = None
+        self.features = features
         previous_layer_size = out_size * 2
         hidden_layers = []
         for layer_size in hidden_sizes:
@@ -34,16 +35,17 @@ class Generator(nn.Module):
             hidden_layers.append(nn.Tanh())
             previous_layer_size = layer_size
         hidden_layers.append(nn.Linear(previous_layer_size, out_size))
-        hidden_layers.append(nn.Sigmoid())
+        self.out_layer = MixedActivation()
         self.hidden_layers = nn.Sequential(*hidden_layers)
 
     def forward(self, inputs, mask, training=False):
         inputs = torch.cat((inputs, mask), dim=1)
-        return self.hidden_layers(inputs)
+        hidden = self.hidden_layers(inputs)
+        return self.out_layer(hidden, self.features, training=training)
 
 
 class Discriminator(nn.Module):
-    def __init__(self, out_size, hidden_sizes=[], hint_variables=False):
+    def __init__(self, out_size, hidden_sizes):
         super(Discriminator, self).__init__()
         previous_layer_size = out_size * 2
         layers = []
@@ -72,7 +74,7 @@ class GAINModel(object):
         data = self.whitener.whiten(data, mask)
         data, mask = self.one_hot.encode(data, mask)
         data, t_mask = to_dense(data, mask)
-        reconstruction = self.generator(data, t_mask)
+        reconstruction = self.generator(data, t_mask, training=False)
         reconstruction, mask = self.one_hot.decode(to_list(reconstruction), mask)
         unwhitened = self.whitener.unwhiten(reconstruction, mask)
         return unwhitened
@@ -90,7 +92,7 @@ def train_gain(name, features, data, mask, args):
 
     # len(data) > len(features) if discretes were one-hot encoded
     num_features = len(data)
-    generator = Generator(num_features, args.gen_layer_sizes)
+    generator = Generator(num_features, args.gen_layer_sizes, features)
     discriminator = Discriminator(num_features, args.disc_layer_sizes)
     if args.cuda and torch.cuda.is_available():
         discriminator.cuda()
@@ -115,7 +117,7 @@ def train_gain(name, features, data, mask, args):
                 batch_mask = to_cuda(batch_mask)
                 hint = to_cuda(hint)
             with torch.no_grad():
-                gen_data = generator(batch_data, batch_mask)
+                gen_data = generator(batch_data, batch_mask, training=True)
             pred = discriminator(gen_data, hint)
             loss = F.binary_cross_entropy(pred, batch_mask)
             loss.backward()
@@ -132,10 +134,11 @@ def train_gain(name, features, data, mask, args):
         # then train generator against trained discriminator
         epoch_loss = 0
         num_batches = 0
-        for batch_data, batch_mask in partition_data(data, mask, args.batch_size):
+        stop = True
+        for batch_data_list, batch_mask_list in partition_data(data, mask, args.batch_size):
             optim_g.zero_grad()
             # preprocessing the data (TODO move this to preprocess.py)
-            batch_data, batch_mask = to_dense(batch_data, batch_mask)
+            batch_data, batch_mask = to_dense(batch_data_list, batch_mask_list)
             hint = generate_hint(batch_mask, features, args.hint, args.hint_method)
 
             if args.cuda and torch.cuda.is_available():
@@ -143,16 +146,27 @@ def train_gain(name, features, data, mask, args):
                 batch_mask = to_cuda(batch_mask)
                 hint = to_cuda(hint)
             with torch.no_grad():
-                gen_data = generator(batch_data, batch_mask)
+                gen_data = generator(batch_data, batch_mask, training=True)
             pred = discriminator(gen_data, hint)
 
             # we want to fool the discriminator now
-            loss = F.binary_cross_entropy(pred, 1 - batch_mask)
-            # TODO downweight the reconstruction loss term as hyperparam
+            inverted_mask = 1 - batch_mask
+            loss = F.binary_cross_entropy(pred, inverted_mask)
+            # TODO downweight the reconstruction loss term as hyperparam?
             loss += reconstruction_loss_function(batch_mask * gen_data,
                                                  batch_mask * batch_data,
                                                  features,
                                                  reduction="sum") / torch.sum(batch_mask)
+            if args.verbose and stop:
+                missing_data = torch.stack([x.float() for x in batch_data_list], -1)
+                if args.cuda:
+                    missing_data = to_cuda(missing_data)
+                missing_loss = reconstruction_loss_function(inverted_mask * gen_data,
+                                                            inverted_mask * missing_data,
+                                                            features,
+                                                            reduction="sum") / torch.sum(inverted_mask)
+                logging.debug("imputation loss = {}".format(missing_loss.item()))
+                stop = False
             loss.backward()
             optim_g.step()
             losses_g.append(loss)
