@@ -38,7 +38,7 @@ def reconstruction_loss_function(reconstructed, original, features, reduction="m
 
 
 def generate_hint(mask, features, prob, method='drop'):
-    # there is a difference between the code implementation and what is described in the paper
+    # there is a difference between the code implementation and what is described in the paper.
     # in the code, the hint drops 1s in the mask with probability `prob` (method='drop')
     # https://github.com/jsyoon0823/GAIN/blob/master/MNST_Code_Example.py#L44
     # in the paper, zero values in the mask are replaced with 0.5 given probability `probs`

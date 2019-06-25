@@ -43,6 +43,15 @@ class Generator(nn.Module):
         hidden = self.hidden_layers(inputs)
         return self.out_layer(hidden, self.features, training=training)
 
+    def impute(self, inputs, mask):
+        """
+        Like ``.forward()``, but ensures that observed values are untouched.
+        """
+        out = self(inputs, mask, training=False)
+        # fill in missing values with predicted reconstructed values
+        out += mask * (inputs - out)
+        return out
+
 
 class Discriminator(nn.Module):
     def __init__(self, out_size, hidden_sizes):
@@ -74,7 +83,7 @@ class GAINModel(object):
         data = self.whitener.whiten(data, mask)
         data, mask = self.one_hot.encode(data, mask)
         data, t_mask = to_dense(data, mask)
-        reconstruction = self.generator(data, t_mask, training=False)
+        reconstruction = self.generator.impute(data, t_mask)
         reconstruction, mask = self.one_hot.decode(to_list(reconstruction), mask)
         unwhitened = self.whitener.unwhiten(reconstruction, mask)
         return unwhitened
@@ -104,7 +113,7 @@ def train_gain(name, features, data, mask, args):
 
     logging.info('TRAINING DISCRIMINATOR')
     for i in range(args.num_epochs):
-        # first optimize the disc with a fixed gen
+        # first optimize the disc wrt a fixed gen...
         epoch_loss = 0
         num_batches = 0
         for batch_data, batch_mask in partition_data(data, mask, args.batch_size):
@@ -131,7 +140,7 @@ def train_gain(name, features, data, mask, args):
 
     logging.info('TRAINING GENERATOR')
     for i in range(args.num_epochs):
-        # then train generator against trained discriminator
+        # ...then train the generator against the trained discriminator
         epoch_loss = 0
         num_batches = 0
         stop = True
