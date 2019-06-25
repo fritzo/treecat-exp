@@ -43,11 +43,11 @@ class Generator(nn.Module):
         hidden = self.hidden_layers(inputs)
         return self.out_layer(hidden, self.features, training=training)
 
-    def impute(self, inputs, mask):
+    def impute(self, inputs, mask, training=False):
         """
         Like ``.forward()``, but ensures that observed values are untouched.
         """
-        out = self(inputs, mask, training=False)
+        out = self(inputs, mask, training=training)
         # fill in missing values with predicted reconstructed values
         out += mask * (inputs - out)
         return out
@@ -116,6 +116,7 @@ def train_gain(name, features, data, mask, args):
         # first optimize the disc wrt a fixed gen...
         epoch_loss = 0
         num_batches = 0
+        stop = True
         for batch_data, batch_mask in partition_data(data, mask, args.batch_size):
             optim_d.zero_grad()
             # preprocessing the data (TODO move this to preprocess.py)
@@ -126,7 +127,10 @@ def train_gain(name, features, data, mask, args):
                 batch_mask = to_cuda(batch_mask)
                 hint = to_cuda(hint)
             with torch.no_grad():
-                gen_data = generator(batch_data, batch_mask, training=True)
+                gen_data = generator.impute(batch_data, batch_mask, training=True)
+            if torch.isnan(gen_data).any().item():
+                logging.debug("NaN in generated data")
+                bb()
             pred = discriminator(gen_data, hint)
             loss = F.binary_cross_entropy(pred, batch_mask)
             loss.backward()
@@ -154,12 +158,17 @@ def train_gain(name, features, data, mask, args):
                 batch_data = to_cuda(batch_data)
                 batch_mask = to_cuda(batch_mask)
                 hint = to_cuda(hint)
-            with torch.no_grad():
-                gen_data = generator(batch_data, batch_mask, training=True)
-            pred = discriminator(gen_data, hint)
+
+            inverted_mask = 1 - batch_mask
+            gen_data = generator(batch_data, batch_mask, training=True)
+            imputed_data = batch_data * gen_data + inverted_mask * gen_data
+            pred = discriminator(imputed_data, hint)
+
+            if torch.isnan(gen_data).any().item():
+                logging.debug("NaN in generated data")
+                bb()
 
             # we want to fool the discriminator now
-            inverted_mask = 1 - batch_mask
             loss = F.binary_cross_entropy(pred, inverted_mask)
             # TODO downweight the reconstruction loss term as hyperparam?
             loss += reconstruction_loss_function(batch_mask * gen_data,
