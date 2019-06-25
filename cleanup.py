@@ -24,12 +24,12 @@ from treecat_exp.vae import load_vae, train_vae
 def cleanup(name, features, data, mask, args):
     corrupted_filename = os.path.join(CLEANUP, "{}.corrupted.pkl".format(name))
     cleaned_filename = os.path.join(CLEANUP, "{}.cleaned.pkl".format(name))
-    if os.path.exists(cleaned_filename) and os.path.exists(corrupted_filename) and not args.clean:
+    if os.path.exists(cleaned_filename) and os.path.exists(corrupted_filename) and not args.force:
         corrupted = load_object(corrupted_filename)
         cleaned = load_object(cleaned_filename)
         if args.model.startswith("treecat"):
             model = load_treecat(name)
-        elif args.model == "vae":
+        elif args.model.startswith("vae"):
             model = load_vae(name)
         elif args.model.startswith("fancy"):
             model = load_fancy_imputer(name)
@@ -50,7 +50,7 @@ def cleanup(name, features, data, mask, args):
     logging.debug("Training model on corrupted data")
     if args.model.startswith("treecat"):
         model = train_treecat(name, features, corrupted["data"], corrupted["mask"], args)
-    elif args.model == "vae":
+    elif args.model.startswith("vae"):
         model = train_vae(name, features, corrupted["data"], corrupted["mask"], args)
     elif args.model.startswith("fancy"):
         model = train_fancy_imputer(name, features, corrupted["data"], corrupted["mask"], args)
@@ -67,8 +67,8 @@ def cleanup(name, features, data, mask, args):
             batch_data = to_cuda(batch_data)
             batch_mask = to_cuda(batch_mask)
         with torch.no_grad():
-            if args.model == "vae":
-                batch_data = model.sample(batch_data, batch_mask, iterative=args.iterative)
+            if args.model.startswith("vae"):
+                batch_data = model.sample(batch_data, batch_mask, iters=args.vae_iters)
             else:
                 batch_data = model.sample(batch_data, batch_mask)
         end = begin + len(batch_data[0])
@@ -175,8 +175,8 @@ if __name__ == "__main__":
     parser.add_argument("--log-errors", action="store_true")
     parser.add_argument("-n", "--num-epochs", default=100, type=int)
     parser.add_argument("-b", "--batch-size", default=64, type=int)
-    parser.add_argument("--clean", action="store_true", default=False,
-                        help="whether to run a fresh run (overwrite old results)")
+    parser.add_argument("--force", action="store_true", default=False,
+                        help="whether to overwrite old results")
 
     # Treecat configs
     parser.add_argument("-c", "--capacity", default=8, type=int)
@@ -194,8 +194,7 @@ if __name__ == "__main__":
     parser.add_argument("--decoder-layer-sizes", default=[128, 64], type=list)
     parser.add_argument("-l", "--logging-interval", default=10, type=int)
     parser.add_argument("--kl-factor", default=0.001, type=int)
-    parser.add_argument("--iterative", action="store_true", default=False,
-                        help="whether to use iterative imputation")
+    parser.add_argument("--vae-iters", default=1, type=int)
     parser.add_argument("--tolerance", default=0.001, type=float, help="tolerance for iterative imputation")
 
     # fancy configs

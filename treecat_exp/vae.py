@@ -79,6 +79,15 @@ class VAE(nn.Module):
         reconstructed = self.decoder(z, training=training)
         return z, reconstructed, mu, log_var
 
+    def impute(self, inputs, mask):
+        """
+        Like ``.forward()``, but ensures that observed values are untouched.
+        """
+        z, reconstructed, mu, log_var = self(inputs, training=False)
+        # fill in missing values with predicted reconstructed values
+        reconstructed += mask * (inputs - reconstructed)
+        return reconstructed
+
 
 class VAEModel(object):
     def __init__(self, vae, features, whitener):
@@ -86,23 +95,14 @@ class VAEModel(object):
         self.one_hot = OneHotEncoder(features)
         self.whitener = whitener
 
-    def sample(self, data, mask, iterative=False):
+    def sample(self, data, mask, iters=1):
+        assert iters >= 1
         data = self.whitener.whiten(data, mask)
         data, mask = self.one_hot.encode(data, mask)
         data, t_mask = to_dense(data, mask)
-        reconstruction = self.vae(data, training=False)[1]
-        if iterative:
-            # Variational autoencoders for missing data imputation with application
-            # to simulated milling circuit. McCoy et al, 2018.
-
-            # TODO this can be moved upstream to be used with the other methods
-            # but not sure if the other methods will work correctly if the imputed
-            # values are filled in and the mask is removed (nothing is masked)
-            for i in range(10):
-                inverted_mask = 1. - t_mask
-                # fill in missing values with predicted reconstructed values
-                imputed_data = data * t_mask + inverted_mask * reconstruction
-                reconstruction = self.vae(imputed_data, training=False)[1]
+        reconstruction = data
+        for i in range(iters):
+            reconstruction = self.vae.impute(reconstruction, t_mask)
 
         reconstruction, mask = self.one_hot.decode(to_list(reconstruction), mask)
         unwhitened = self.whitener.unwhiten(reconstruction, mask)
