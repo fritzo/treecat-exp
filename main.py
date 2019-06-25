@@ -19,6 +19,8 @@ def cleanup(args):
         "--dataset={}".format(dataset),
         "--delete-percent={}".format(delete_percent),
     ]
+    if args.force:
+        command.append("--force")
     if args.verbose:
         command.append("--verbose")
     if args.pdb:
@@ -31,7 +33,6 @@ def cleanup(args):
             "--batch-size=20",
             "--num-epochs=1",
             "--custom-config",
-            "--clean",
         ])
     print("#" * 80)
     print("  \\\n".join(command))
@@ -73,6 +74,8 @@ if __name__ == "__main__":
     parser.add_argument("--datasets", help="list of datasets",
                         default="housing,credit,news,census,lending")
     parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("-f", "--force", action="store_true", default=False,
+                        help="whether to overwrite old results")
     parser.add_argument("-d", "--pdb", action="store_true",
                         help="On error, open a debugger")
     parser.add_argument("-e", "--log-errors", action="store_true",

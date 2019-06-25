@@ -50,18 +50,20 @@ Potential new datasets include:
 - Kaggle datasets:
   [medium](https://www.kaggle.com/datasets?sortBy=votes&group=public&page=1&pageSize=20&size=medium&filetype=all&license=all),
   [large](https://www.kaggle.com/datasets?sortBy=votes&group=public&page=1&pageSize=20&size=large&filetype=all&license=all)
+- [Kaggle NYC bus tracks](https://www.kaggle.com/stoney71/new-york-city-transport-statistics) 20M x 17, ~1000 stop-stop pairs. Could be joined with [real-time traffic speed](https://data.cityofnewyork.us/Transportation/Real-Time-Traffic-Speed-Data/qkm5-nuaq)
 - [Kaggle DonorsChoose](https://www.kaggle.com/donorschoose/io#Donors.csv)
+- [UCI Adult](http://mlr.cs.umass.edu/ml/datasets/Adult) 48842 rows x 14 columns, continuous + categorical
 - [UCI Letter Recognition](https://archive.ics.uci.edu/ml/datasets/Letter+Recognition)
 - [UCI Spambase](https://archive.ics.uci.edu/ml/datasets/Spambase)
 - [UCI Default of credit card](https://archive.ics.uci.edu/ml/datasets/default+of+credit+card+clients)
 
 ## Algorithms
 
-- TreeCat (Fritz)
-- CrossCat (Fritz)
-- VAE variants (JP)
-- GAIN (JP)
-- MICE for deterministic imputation (Martin)
+- [x] TreeCat (Fritz)
+- [x] MICE for deterministic imputation (Martin)
+- [ ] CrossCat (Fritz)
+- [ ] VAE variants (JP)
+- [ ] GAIN (JP)
 
 Possible other algorithms:
 - Multimodal VAE ([Wu & Goodman 2018](https://arxiv.org/abs/1802.05335))

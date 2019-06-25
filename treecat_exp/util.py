@@ -57,10 +57,11 @@ def to_dense(data, mask):
     batch_size = next(len(c) for c in data if c is not None)
     for i, m in enumerate(mask):
         if isinstance(m, torch.Tensor):
-            continue
-        if not m:
+            original = m.float() * data[i].float()
+            masked = torch.randn(batch_size, device=data[0].device) * (1 - m).float()
+            data[i] = original + masked
+        elif not m:
             # fill missing data with std noise
-            # TODO scale noise appropriately
             data[i] = torch.randn(batch_size, device=data[0].device)
             mask[i] = torch.zeros(batch_size, dtype=torch.uint8, device=data[0].device)
         else:

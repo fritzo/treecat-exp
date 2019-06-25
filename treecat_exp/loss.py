@@ -24,11 +24,12 @@ def reconstruction_loss_function(reconstructed, original, features, reduction="m
                                     reduction=reduction)
             data_index += f.cardinality
         elif isinstance(f, Boolean):
-            loss += F.binary_cross_entropy(torch.sigmoid(reconstructed[:, data_index]),
+            loss += F.binary_cross_entropy(reconstructed[:, data_index],
                                            original[:, data_index],
                                            reduction=reduction)
             data_index += 1
         else:
+            assert isinstance(f, Real)
             # continuous variable
             loss += F.mse_loss(reconstructed[:, data_index], original[:, data_index],
                                reduction=reduction)
