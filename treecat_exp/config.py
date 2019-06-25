@@ -45,6 +45,45 @@ DEFAULT_CONFIG = {
             "num_epochs": 1,
         },
     },
+    "gain": {
+        "housing": {
+            "learning_rate": 0.001,
+            "batch_size": 64,
+            "num_epochs": 200,
+            "gen_layer_sizes": [120, 64],
+            "disc_layer_sizes": [120, 64],
+        },
+        "credit": {
+            "learning_rate": 0.001,
+            "batch_size": 1000,
+            "num_epochs": 50,
+            "gen_layer_sizes": [200, 64],
+            "disc_layer_sizes": [200, 64],
+            "max_num_rows": 100000,
+        },
+        "news": {
+            "learning_rate": 0.001,
+            "batch_size": 1000,
+            "num_epochs": 50,
+            "gen_layer_sizes": [120, 64],
+            "disc_layer_sizes": [120, 64],
+        },
+        "census": {
+            "batch_size": 1000,
+            "learning_rate": 0.001,
+            "num_epochs": 2,
+            "gen_layer_sizes": [180, 64],
+            "disc_layer_sizes": [180, 64],
+            # "max_num_rows": 100000,
+        },
+        "lending": {
+            "batch_size": 1000,
+            "learning_rate": 0.001,
+            "num_epochs": 2,
+            "gen_layer_sizes": [120, 64],
+            "disc_layer_sizes": [120, 64],
+        },
+    },
     "vae": {
         "housing": {
             "learning_rate": 0.001,
