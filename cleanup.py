@@ -19,6 +19,7 @@ from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.training import load_treecat, train_treecat
 from treecat_exp.util import CLEANUP, TEST, diversity, load_object, pdb_post_mortem, save_object, to_cuda
 from treecat_exp.vae import load_vae, train_vae
+from treecat_exp.gain import load_gain, train_gain
 
 
 def cleanup(name, features, data, mask, args):
@@ -31,6 +32,8 @@ def cleanup(name, features, data, mask, args):
             model = load_treecat(name)
         elif args.model.startswith("vae"):
             model = load_vae(name)
+        elif args.model == "gain":
+            model = load_gain(name)
         elif args.model.startswith("fancy"):
             model = load_fancy_imputer(name)
         else:
@@ -52,6 +55,8 @@ def cleanup(name, features, data, mask, args):
         model = train_treecat(name, features, corrupted["data"], corrupted["mask"], args)
     elif args.model.startswith("vae"):
         model = train_vae(name, features, corrupted["data"], corrupted["mask"], args)
+    elif args.model == "gain":
+        model = train_gain(name, features, corrupted["data"], corrupted["mask"], args)
     elif args.model.startswith("fancy"):
         model = train_fancy_imputer(name, features, corrupted["data"], corrupted["mask"], args)
     else:
@@ -164,7 +169,7 @@ if __name__ == "__main__":
     parser.add_argument("--replace-percent", default=0, type=int)
     parser.add_argument("--dataset", default="housing")
     parser.add_argument("-r", "--max-num-rows", default=1000000000, type=int)
-    parser.add_argument("-m", "--model", default="treecat", help="{treecat, vae, fancy}")
+    parser.add_argument("-m", "--model", default="treecat", help="{treecat, vae, gain, fancy}")
     parser.add_argument('--default-config', dest='default_config', action='store_true')
     parser.add_argument('--custom-config', dest='default_config', action='store_false')
     parser.set_defaults(default_config=True)
@@ -196,6 +201,14 @@ if __name__ == "__main__":
     parser.add_argument("--kl-factor", default=0.001, type=int)
     parser.add_argument("--vae-iters", default=1, type=int)
     parser.add_argument("--tolerance", default=0.001, type=float, help="tolerance for iterative imputation")
+
+    # GAIN configs
+    parser.add_argument("--hint", default=0.9, type=float,
+                        help="probability of hint (for GAIN)")
+    parser.add_argument("--gen-layer-sizes", default=[128, 64], type=list)
+    parser.add_argument("--disc-layer-sizes", default=[128, 64], type=list)
+    parser.add_argument("--hint-method", default='drop', type=str,
+                        help="see comment in treecat_exp.loss.generate_hint")
 
     # fancy configs
     parser.add_argument("--fancy-method", default="IterativeImputer")

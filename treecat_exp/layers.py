@@ -40,6 +40,7 @@ class MixedActivation(nn.Module):
                 output.append(out.unsqueeze(1))
                 data_index += 1
             else:
+                assert isinstance(f, Real)
                 # continuous variable
                 out = torch.tanh(inputs[:, data_index])
                 output.append(out.unsqueeze(1))
