@@ -49,7 +49,12 @@ def main(args):
         logging.info("Running cleanup experiment")
         models = args.models.split(",")
         datasets = args.datasets.split(",")
-        delete_percents = [10] if args.smoketest else [10, 20, 33, 50, 67, 80, 90]
+        if args.smoketest:
+            delete_percents = [10]
+        elif args.delete_percents:
+            delete_percents = args.delete_percents
+        else:
+            delete_percents = [10, 20, 33, 50, 67, 80, 90]
         configs = list(itertools.product(models, datasets, delete_percents, [args]))
         np.random.shuffle(configs)  # improves load balancing
 
@@ -76,6 +81,8 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("-f", "--force", action="store_true", default=False,
                         help="whether to overwrite old results")
+    parser.add_argument("-dp", "--delete-percents", nargs='+', type=int, default=None,
+                        help="delete percents")
     parser.add_argument("-d", "--pdb", action="store_true",
                         help="On error, open a debugger")
     parser.add_argument("-e", "--log-errors", action="store_true",
