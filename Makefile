@@ -91,4 +91,16 @@ clean: FORCE
 cleanresults: FORCE
 	rm -rf results/*
 
+clean-vae: FORCE
+	find results -name '*vae*' -delete 
+
+clean-gain: FORCE
+	find results -name '*gain*' -delete 
+
+clean-treecat: FORCE
+	find results -name '*treecat*' -delete 
+
+clean-fancy: FORCE
+	find results -name '*fancy*' -delete 
+
 FORCE:
