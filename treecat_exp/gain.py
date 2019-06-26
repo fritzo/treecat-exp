@@ -131,7 +131,7 @@ def train_gain(name, features, data, mask, args):
             if torch.isnan(gen_data).any().item():
                 logging.debug("NaN in generated data")
 
-            pred = discriminator(gen_data, hint)
+            pred = discriminator(gen_data.detach(), hint)
             loss = F.binary_cross_entropy(pred, batch_mask)
             loss.backward()
             optim_d.step()
@@ -161,7 +161,7 @@ def train_gain(name, features, data, mask, args):
 
             inverted_mask = 1 - batch_mask
             gen_data = generator(batch_data, batch_mask, training=True)
-            imputed_data = batch_data * gen_data + inverted_mask * gen_data
+            imputed_data = batch_data * batch_mask + inverted_mask * gen_data
             pred = discriminator(imputed_data, hint)
 
             if torch.isnan(gen_data).any().item():
@@ -175,7 +175,7 @@ def train_gain(name, features, data, mask, args):
                                                  batch_mask * batch_data,
                                                  features,
                                                  reduction="sum") / torch.sum(batch_mask)
-            if args.verbose and stop:
+            if args.verbose and i % 10 == 0 and stop:
                 missing_data = torch.stack([x.float() for x in batch_data_list], -1)
                 if args.cuda:
                     missing_data = to_cuda(missing_data)
@@ -192,7 +192,7 @@ def train_gain(name, features, data, mask, args):
             num_batches += 1
         if i % args.logging_interval == 0:
             logging.info('[generator] epoch {}: loss = {}'
-                         .format(i, epoch_loss))
+                         .format(i, epoch_loss / num_batches))
     model = GAINModel(generator, discriminator, features, whitener)
     logging.info("saving object to: {}/{}.model.pkl".format(TRAIN, name))
     save_object(model, os.path.join(TRAIN, "{}.model.pkl".format(name)))

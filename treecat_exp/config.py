@@ -49,39 +49,39 @@ DEFAULT_CONFIG = {
         "housing": {
             "learning_rate": 0.1,
             "batch_size": 128,
-            "num_epochs": 1000,
-            "gen_layer_sizes": [120, 64],
+            "num_epochs": 1200,
+            "gen_layer_sizes": [180, 64],
             "disc_layer_sizes": [120, 64],
         },
         "credit": {
-            # NaNs
             "learning_rate": 0.01,
             "batch_size": 1000,
             "num_epochs": 200,
-            "gen_layer_sizes": [120, 64],
+            "gen_layer_sizes": [200, 64],
             "disc_layer_sizes": [120, 64],
         },
         "news": {
             "learning_rate": 0.01,
             "batch_size": 1000,
-            "num_epochs": 100,
-            "gen_layer_sizes": [120, 64],
+            "num_epochs": 300,
+            "gen_layer_sizes": [200, 64],
             "disc_layer_sizes": [120, 64],
         },
         "census": {
-            # untested
+            # untested on full data
             "batch_size": 1000,
             "learning_rate": 0.01,
             "num_epochs": 10,
-            "gen_layer_sizes": [180, 64],
+            "gen_layer_sizes": [200, 64],
             "disc_layer_sizes": [180, 64],
             "max_num_rows": 100000,
         },
         "lending": {
+            # untested on full data
             "batch_size": 1000,
             "learning_rate": 0.01,
             "num_epochs": 10,
-            "gen_layer_sizes": [120, 64],
+            "gen_layer_sizes": [200, 64],
             "disc_layer_sizes": [120, 64],
             "max_num_rows": 100000,
         },
