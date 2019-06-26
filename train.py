@@ -14,6 +14,8 @@ def main(args):
     # Load data.
     features, data, mask = load_data(args)
     name = "{}.{}.{}".format(args.dataset, args.model, args.capacity)
+    if args.suffix:
+        name = "{}.{}".format(name, args.suffix)
     if args.model == "treecat":
         train_treecat(name, features, data, mask, args)
     else:
@@ -34,6 +36,7 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--num-epochs", default=100, type=int)
     parser.add_argument("-b", "--batch-size", default=64, type=int)
     parser.add_argument("-i", "--init-size", default=1000000000, type=int)
+    parser.add_argument("--suffix", default="")
     parser.add_argument("--default-config", action="store_true")
     parser.add_argument("--seed", default=123456789, type=int)
     parser.add_argument("--cuda", action="store_true")

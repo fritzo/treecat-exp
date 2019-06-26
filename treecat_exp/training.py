@@ -7,7 +7,7 @@ import pyro
 import torch
 from pyro.contrib.tabular import TreeCat
 from pyro.contrib.tabular.treecat import print_tree
-from pyro.optim import Adam
+from pyro.optim import Adam, RMSprop
 
 from treecat_exp.preprocess import partition_data
 from treecat_exp.util import TRAIN, interrupt, load_object, save_object, to_cuda
@@ -93,7 +93,10 @@ def train_treecat(name, features, data, mask, args):
         model = TreeCat(features, args.capacity, annealing_rate=args.annealing_rate)
     else:
         raise ValueError("Unknown model: {}".format(args.model))
-    optim = Adam({"lr": args.learning_rate})
+    if True:
+        optim = Adam({"lr": args.learning_rate})
+    else:
+        optim = RMSprop({"lr": args.learning_rate})
     trainer = model.trainer(optim)
     for batch_data, batch_mask in partition_data(data, mask, init_size):
         if isinstance(batch_mask, torch.Tensor):
