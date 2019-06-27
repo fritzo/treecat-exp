@@ -23,10 +23,12 @@ The notebooks
 [debug_feature_init.ipynb](debug_feature_init.ipynb)
 serve to assess convergence and diagnose issues with initialization.
 
-[main.py](main.py) is the main experiment script to compare multiple models.
+[main.py](main.py) is the main experiment script to train and compare multiple models.
 
 [cleanup.py](cleanup.py) and
 [cleanup.ipynb](cleanup.ipynb) evaluate imputation accuracy.
+
+By default, the configs in  `treecat_exp/configs.py` are used unless the `--custom-config` flag is specified.
 
 [eval_predictor.py](eval_predictor.py) and
 [eval_predictor.ipynb](eval_predictor.ipynb)
@@ -44,6 +46,7 @@ Existing datasets include:
 - [UCI Online news](https://archive.ics.uci.edu/ml/datasets/Online+News+Popularity)
 - [UCI US Census 1990](https://archive.ics.uci.edu/ml/datasets/US+Census+Data+%281990%29)
 - [Kaggle Lending club](https://www.kaggle.com/wendykan/lending-club-loan-data)
+- [UCI Default of credit card](https://archive.ics.uci.edu/ml/datasets/default+of+credit+card+clients)
 
 Potential new datasets include:
 - [UCI datastes](https://archive.ics.uci.edu/ml/datasets.php)
@@ -55,15 +58,14 @@ Potential new datasets include:
 - [UCI Adult](http://mlr.cs.umass.edu/ml/datasets/Adult) 48842 rows x 14 columns, continuous + categorical
 - [UCI Letter Recognition](https://archive.ics.uci.edu/ml/datasets/Letter+Recognition)
 - [UCI Spambase](https://archive.ics.uci.edu/ml/datasets/Spambase)
-- [UCI Default of credit card](https://archive.ics.uci.edu/ml/datasets/default+of+credit+card+clients)
 
 ## Algorithms
 
 - [x] TreeCat (Fritz)
 - [x] MICE for deterministic imputation (Martin)
 - [ ] CrossCat (Fritz)
-- [ ] VAE variants (JP)
-- [ ] GAIN (JP)
+- [x] VAE variants (JP)
+- [x] GAIN (JP)
 
 Possible other algorithms:
 - Multimodal VAE ([Wu & Goodman 2018](https://arxiv.org/abs/1802.05335))
