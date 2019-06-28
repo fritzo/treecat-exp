@@ -94,9 +94,9 @@ def train_treecat(name, features, data, mask, args):
     else:
         raise ValueError("Unknown model: {}".format(args.model))
     if True:
-        optim = Adam({"lr": args.learning_rate})
+        optim = Adam({"lr": args.learning_rate, "betas": (0.5, 0.9)})
     else:
-        optim = RMSprop({"lr": args.learning_rate})
+        optim = RMSprop({"lr": args.learning_rate, "alpha": 0.9})
     trainer = model.trainer(optim)
     for batch_data, batch_mask in partition_data(data, mask, init_size):
         if isinstance(batch_mask, torch.Tensor):
@@ -118,7 +118,8 @@ def train_treecat(name, features, data, mask, args):
     param_store_monitor = ParamStoreMonitor()
     stepsizes = []
     losses = []
-    meta = {"args": args, "losses": losses, "stepsizes": stepsizes}
+    memsizes = []
+    meta = {"args": args, "losses": losses, "stepsizes": stepsizes, "memsizes": memsizes}
     with interrupt(save_treecat, name, model, meta, args):
         for epoch in range(args.num_epochs):
             epoch_loss = 0
@@ -140,6 +141,7 @@ def train_treecat(name, features, data, mask, args):
                     logging.debug("tree_stepsize = {:0.4g}, feature_stepsize = {:0.4g}, loss = {:0.4g}"
                                   .format(stepsize["tree"], feature_stepsize, loss))
                 stepsizes.append(stepsize)
+                memsizes.append(model._feature_model._count_stats)
             logging.info("epoch {} loss = {}".format(epoch, epoch_loss / num_batches))
             save_treecat(name, model, meta, args)
 
