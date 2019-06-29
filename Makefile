@@ -50,6 +50,17 @@ cleanup-credit: FORCE
 cleanup-news: FORCE
 	python -O main.py --datasets=news --models=fancysvd,treecat16,treecat32,treecat64 --log-errors
 
+train-housing: FORCE
+	python -O train.py --dataset=housing -c 16 -n 100 -b 128 -ar 0.02 -lr 0.01 --suffix=lr_01
+	python -O train.py --dataset=housing -c 16 -n 100 -b 128 -ar 0.02 -lr 0.02 --suffix=lr_02
+	python -O train.py --dataset=housing -c 16 -n 100 -b 128 -ar 0.02 -lr 0.03 --suffix=lr_03
+	python -O train.py --dataset=housing -c 16 -n 100 -b 128 -ar 0.02 -lr 0.04 --suffix=lr_04
+	python -O train.py --dataset=housing -c 16 -n 100 -b 128 -ar 0.02 -lr 0.05 --suffix=lr_05
+	python -O train.py --dataset=housing -c 16 -n 100 -b 128 -ar 0.02 -lr 0.07 --suffix=lr_07
+	python -O train.py --dataset=housing -c 16 -n 100 -b 128 -ar 0.02 -lr 0.10 --suffix=lr_10
+	# python -O train.py --dataset=housing -c 16 -n 100 -b 128 -ar 0.02 -lr 0.20 --suffix=lr_20  # NAN
+	# python -O train.py --dataset=housing -c 16 -n 100 -b 128 -ar 0.02 -lr 0.50 --suffix=lr_50  # NAN
+
 train-credit: FORCE
 	python -O train.py --cuda  --dataset=credit -b=2000 -n=100 -c=8
 	python -O train.py --cuda  --dataset=credit -b=2000 -n=100 -c=12
