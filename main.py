@@ -12,13 +12,13 @@ import numpy as np
 
 def cleanup(args):
     model, dataset, delete_percent, args = args
-    command = [
-        python,
+    command = [python] if __debug__ else [python, "-O"]
+    command.extend([
         "cleanup.py",
         "--model={}".format(model),
         "--dataset={}".format(dataset),
         "--delete-percent={}".format(delete_percent),
-    ]
+    ])
     if args.force:
         command.append("--force")
     if args.verbose:
