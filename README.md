@@ -63,9 +63,9 @@ Potential new datasets include:
 
 - [x] TreeCat (Fritz)
 - [x] MICE for deterministic imputation (Martin)
-- [ ] CrossCat (Fritz)
 - [x] VAE variants (JP)
 - [x] GAIN (JP)
+- [ ] CrossCat (Fritz)
 
 Possible other algorithms:
 - Multimodal VAE ([Wu & Goodman 2018](https://arxiv.org/abs/1802.05335))

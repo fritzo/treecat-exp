@@ -185,6 +185,7 @@ if __name__ == "__main__":
 
     # Treecat configs
     parser.add_argument("-c", "--capacity", default=8, type=int)
+    parser.add_argument("--treecat-method", default="map")
     parser.add_argument("-lr", "--learning-rate", default=0.01, type=float)
     parser.add_argument("-ar", "--annealing-rate", default=0.01, type=float)
     parser.add_argument("-i", "--init-size", default=1000000000, type=int)

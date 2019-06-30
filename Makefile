@@ -62,22 +62,22 @@ train-housing: FORCE
 	# python -O train.py --dataset=housing -c 16 -n 100 -b 128 -ar 0.02 -lr 0.50 --suffix=lr_50  # NAN
 
 train-credit: FORCE
-	python -O train.py --cuda  --dataset=credit -b=2000 -n=100 -c=8
-	python -O train.py --cuda  --dataset=credit -b=2000 -n=100 -c=12
-	python -O train.py --cuda  --dataset=credit -b=2000 -n=100 -c=16
-	python -O train.py --cuda  --dataset=credit -b=2000 -n=100 -c=24
-	python -O train.py --cuda  --dataset=credit -b=2000 -n=100 -c=32
-	python -O train.py --cuda  --dataset=credit -b=2000 -n=100 -c=48
-	python -O train.py --cuda  --dataset=credit -b=2000 -n=100 -c=64
+	python -O train.py --dataset=credit -b=2000 -n=100 -ar=0.2 -lr=0.3 -c=8
+	python -O train.py --dataset=credit -b=2000 -n=100 -ar=0.2 -lr=0.3 -c=12
+	python -O train.py --dataset=credit -b=2000 -n=100 -ar=0.2 -lr=0.3 -c=16
+	python -O train.py --dataset=credit -b=2000 -n=100 -ar=0.2 -lr=0.3 -c=24
+	python -O train.py --dataset=credit -b=2000 -n=100 -ar=0.2 -lr=0.3 -c=32
+	python -O train.py --dataset=credit -b=2000 -n=100 -ar=0.2 -lr=0.3 -c=48
+	python -O train.py --dataset=credit -b=2000 -n=100 -ar=0.2 -lr=0.3 -c=64
 
 train-news: FORCE
-	python -O train.py --cuda  --dataset=credit -b=2048 -n=100 -c=8
-	python -O train.py --cuda  --dataset=credit -b=2048 -n=100 -c=12
-	python -O train.py --cuda  --dataset=credit -b=2048 -n=100 -c=16
-	python -O train.py --cuda  --dataset=credit -b=2048 -n=100 -c=24
-	python -O train.py --cuda  --dataset=credit -b=2048 -n=100 -c=32
-	python -O train.py --cuda  --dataset=credit -b=2048 -n=100 -c=48
-	python -O train.py --cuda  --dataset=credit -b=2048 -n=100 -c=64
+	python -O train.py --dataset=credit -b=2048 -n=100 -c=8
+	python -O train.py --dataset=credit -b=2048 -n=100 -c=12
+	python -O train.py --dataset=credit -b=2048 -n=100 -c=16
+	python -O train.py --dataset=credit -b=2048 -n=100 -c=24
+	python -O train.py --dataset=credit -b=2048 -n=100 -c=32
+	python -O train.py --dataset=credit -b=2048 -n=100 -c=48
+	python -O train.py --dataset=credit -b=2048 -n=100 -c=64
 
 train-treecat: FORCE
 	python -O train.py --default-config --dataset=housing

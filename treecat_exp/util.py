@@ -35,7 +35,7 @@ def interrupt(fn, *args, **kwargs):
 
 @contextmanager
 def pdb_post_mortem():
-    if not sys.__stdin__.isatty():
+    if not (__debug__ and sys.__stdin__.isatty()):
         yield
         return
 

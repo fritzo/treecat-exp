@@ -31,6 +31,7 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--max-num-rows", default=1000000000, type=int)
     parser.add_argument("-m", "--model", default="treecat")
     parser.add_argument("-c", "--capacity", default=8, type=int)
+    parser.add_argument("--treecat-method", default="map")
     parser.add_argument("-lr", "--learning-rate", default=0.01, type=float)
     parser.add_argument("-ar", "--annealing-rate", default=0.01, type=float)
     parser.add_argument("-n", "--num-epochs", default=100, type=int)
