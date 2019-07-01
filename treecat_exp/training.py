@@ -93,8 +93,10 @@ def train_treecat(name, features, data, mask, args):
         model = TreeCat(features, args.capacity, annealing_rate=args.annealing_rate)
     else:
         raise ValueError("Unknown model: {}".format(args.model))
-    optim = Adam({"lr": args.learning_rate, "betas": (0.5, 0.9)})
-    trainer = model.trainer(optim, method=args.treecat_method)
+    options = {}
+    if args.treecat_method == "map":
+        options["optim"] = Adam({"lr": args.learning_rate, "betas": (0.5, 0.9)})
+    trainer = model.trainer(args.treecat_method, **options)
     for batch_data, batch_mask in partition_data(data, mask, init_size):
         if isinstance(batch_mask, torch.Tensor):
             if batch_mask.all():

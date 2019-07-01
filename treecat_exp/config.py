@@ -45,6 +45,15 @@ DEFAULT_CONFIG = {
             "num_epochs": 1,
         },
     },
+    "treecatnuts": {
+        "housing": {
+            "capacity": 16,
+            "batch_size": 506,
+            "treecat_method": "nuts",
+            "annealing_rate": 0.02,
+            "num_epochs": 350,
+        },
+    },
     "gain": {
         "housing": {
             "learning_rate": 0.1,

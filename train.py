@@ -16,7 +16,7 @@ def main(args):
     name = "{}.{}.{}".format(args.dataset, args.model, args.capacity)
     if args.suffix:
         name = "{}.{}".format(name, args.suffix)
-    if args.model == "treecat":
+    if args.model.startswith("treecat"):
         train_treecat(name, features, data, mask, args)
     else:
         raise ValueError("Unknown model: {}".format(args.model))
