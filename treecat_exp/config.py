@@ -45,9 +45,35 @@ DEFAULT_CONFIG = {
             "num_epochs": 1,
         },
     },
+    "treecat32": {
+        "housing": {
+            "capacity": 32,
+            "batch_size": 128,
+            "learning_rate": 0.03,
+            "annealing_rate": 0.02,
+            "num_epochs": 200,
+        },
+    },
     "treecatnuts": {
         "housing": {
             "capacity": 16,
+            "batch_size": 506,
+            "treecat_method": "nuts",
+            "annealing_rate": 0.02,
+            "num_epochs": 350,
+        },
+        "census": {
+            "capacity": 32,
+            "batch_size": 7600,
+            "max_num_rows": 7600,
+            "treecat_method": "nuts",
+            "annealing_rate": 0.02,
+            "num_epochs": 1000,
+        },
+    },
+    "treecatnuts32": {
+        "housing": {
+            "capacity": 32,
             "batch_size": 506,
             "treecat_method": "nuts",
             "annealing_rate": 0.02,

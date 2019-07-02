@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import os
+import timeit
 
 import pyro
 import torch
@@ -85,6 +86,7 @@ def train_treecat(name, features, data, mask, args):
     logging.debug("\n".join(["Features:"] + [str(f) for f in features]))
 
     # Initialize the model.
+    start_time = timeit.default_timer()
     init_size = min(num_rows, args.init_size)
     logging.debug("Initializing {} model from {} rows".format(args.model, init_size))
     pyro.set_rng_seed(args.seed)
@@ -118,7 +120,8 @@ def train_treecat(name, features, data, mask, args):
     stepsizes = []
     losses = []
     memsizes = []
-    meta = {"args": args, "losses": losses, "stepsizes": stepsizes, "memsizes": memsizes}
+    times = []
+    meta = {"args": args, "losses": losses, "stepsizes": stepsizes, "memsizes": memsizes, "times": times}
     with interrupt(save_treecat, name, model, meta, args):
         for epoch in range(args.num_epochs):
             epoch_loss = 0
@@ -141,6 +144,7 @@ def train_treecat(name, features, data, mask, args):
                                   .format(stepsize["tree"], feature_stepsize, loss))
                 stepsizes.append(stepsize)
                 memsizes.append(model._feature_model._count_stats)
+                times.append(timeit.default_timer() - start_time)
             logging.info("epoch {} loss = {}".format(epoch, epoch_loss / num_batches))
             save_treecat(name, model, meta, args)
 
