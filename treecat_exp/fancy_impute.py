@@ -29,7 +29,7 @@ class FancyImputer(object):
         self.knn_neighbors = knn_neighbors
         assert method in ['IterativeImputer', 'IterativeSVD', 'KNN']
 
-    def sample(self, data, mask):
+    def impute(self, data, mask):
         data = self.whitener.whiten(data, mask)
         data, mask = self.encoder.encode(data, mask)
 
@@ -49,6 +49,8 @@ class FancyImputer(object):
         elif self.method == 'KNN':
             ii = KNN(k=self.knn_neighbors,
                      min_value=-10.0, max_value=10.0)
+        else:
+            raise ValueError("Unknown method: {}".format(self.method))
 
         # Note that IterativeImputer weirdly drops all-nan columns.
         ok = (data == data).any(0)

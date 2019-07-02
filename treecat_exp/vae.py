@@ -95,7 +95,7 @@ class VAEModel(object):
         self.one_hot = OneHotEncoder(features)
         self.whitener = whitener
 
-    def sample(self, data, mask, iters=1):
+    def impute(self, data, mask, iters=1):
         assert iters >= 1
         data = self.whitener.whiten(data, mask)
         data, mask = self.one_hot.encode(data, mask)

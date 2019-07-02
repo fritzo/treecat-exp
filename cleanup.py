@@ -49,13 +49,13 @@ def cleanup(name, features, data, mask, args):
     save_object(corrupted, corrupted_filename)
 
     # Train model on corrupted data.
-    # Models should implement methods .sample(data,mask) and .log_prob(data,mask).
+    # Models should implement methods .impute(data,mask) and .log_prob(data,mask).
     logging.debug("Training model on corrupted data")
     if args.model.startswith("treecat"):
         model = train_treecat(name, features, corrupted["data"], corrupted["mask"], args)
     elif args.model.startswith("vae"):
         model = train_vae(name, features, corrupted["data"], corrupted["mask"], args)
-    elif args.model == "gain":
+    elif args.model.startswith("gain"):
         model = train_gain(name, features, corrupted["data"], corrupted["mask"], args)
     elif args.model.startswith("fancy"):
         model = train_fancy_imputer(name, features, corrupted["data"], corrupted["mask"], args)
@@ -73,9 +73,11 @@ def cleanup(name, features, data, mask, args):
             batch_mask = to_cuda(batch_mask)
         with torch.no_grad():
             if args.model.startswith("vae"):
-                batch_data = model.sample(batch_data, batch_mask, iters=args.vae_iters)
+                batch_data = model.impute(batch_data, batch_mask, iters=args.vae_iters)
+            elif args.model.startswith("treecat"):
+                batch_data = model.median(batch_data, batch_mask)
             else:
-                batch_data = model.sample(batch_data, batch_mask)
+                batch_data = model.impute(batch_data, batch_mask)
         end = begin + len(batch_data[0])
         for cleaned_col, batch_col in zip(cleaned_data, batch_data):
             cleaned_col[begin:end] = batch_col.cpu()

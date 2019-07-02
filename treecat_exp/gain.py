@@ -79,7 +79,7 @@ class GAINModel(object):
         self.features = features
         self.whitener = whitener
 
-    def sample(self, data, mask, iterative=False):
+    def impute(self, data, mask, iterative=False):
         data = self.whitener.whiten(data, mask)
         data, mask = self.one_hot.encode(data, mask)
         data, t_mask = to_dense(data, mask)
