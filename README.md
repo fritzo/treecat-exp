@@ -55,6 +55,7 @@ Potential new datasets include:
   [large](https://www.kaggle.com/datasets?sortBy=votes&group=public&page=1&pageSize=20&size=large&filetype=all&license=all)
 - [Kaggle NYC bus tracks](https://www.kaggle.com/stoney71/new-york-city-transport-statistics) 20M x 17, ~1000 stop-stop pairs. Could be joined with [real-time traffic speed](https://data.cityofnewyork.us/Transportation/Real-Time-Traffic-Speed-Data/qkm5-nuaq)
 - [Kaggle DonorsChoose](https://www.kaggle.com/donorschoose/io#Donors.csv)
+- [UCI Covertype](https://archive.ics.uci.edu/ml/datasets/Covertype) 581012 rows x (54+1) columns, 44 boolean + 10 real + 1 categorical
 - [UCI Adult](http://mlr.cs.umass.edu/ml/datasets/Adult) 48842 rows x 14 columns, continuous + categorical
 - [UCI Letter Recognition](https://archive.ics.uci.edu/ml/datasets/Letter+Recognition)
 - [UCI Spambase](https://archive.ics.uci.edu/ml/datasets/Spambase)
