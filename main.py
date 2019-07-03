@@ -19,6 +19,8 @@ def cleanup(args):
         "--dataset={}".format(dataset),
         "--delete-percent={}".format(delete_percent),
     ])
+    if args.max_num_rows:
+        command.append("--max_num_rows={}".format(args.max_num_rows))
     if args.force:
         command.append("--force")
     if args.verbose:
@@ -78,6 +80,7 @@ if __name__ == "__main__":
                         default="fancysvd,treecat,vae,gain")
     parser.add_argument("--datasets", help="list of datasets",
                         default="housing,credit,news,census,lending")
+    parser.add_argument("-r", "--max-num-rows")
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("-f", "--force", action="store_true", default=False,
                         help="whether to overwrite old results")
