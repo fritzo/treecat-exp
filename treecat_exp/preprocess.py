@@ -5,7 +5,7 @@ import logging
 import os
 import subprocess
 import sys
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 
 import torch
 from pyro.contrib.examples import boston_housing
@@ -587,6 +587,115 @@ def load_lending(args):
 
         # Add the feature.
         typ = LENDING_SCHEMA[name]
+        if typ is Discrete:
+            feature = typ(name, len(dataset["supports"][name]))
+        else:
+            feature = typ(name)
+        features.append(feature)
+        data.append(col_data.to(feature.dtype))
+        mask.append(col_mask)
+    return features, data, mask
+
+
+# See https://archive.ics.uci.edu/ml/machine-learning-databases/covtype/covtype.info
+COVERTYPE_SCHEMA = OrderedDict([
+    ("Elevation", Real),
+    ("Aspect", Real),
+    ("Slope", Real),
+    ("Horizontal_Distance_To_Hydrology", Real),
+    ("Vertical_Distance_To_Hydrology", Real),
+    ("Horizontal_Distance_To_Roadways", Real),
+    ("Hillshade_9am", Real),
+    ("Hillshade_Noon", Real),
+    ("Hillshade_3pm", Real),
+    ("Horizontal_Distance_To_Fire_Points", Real),
+])
+for i in range(4):
+    COVERTYPE_SCHEMA["Wilderness_Area_{}".format(i)] = Boolean
+for i in range(40):
+    COVERTYPE_SCHEMA["Soil_Type_{}".format(i)] = Boolean
+COVERTYPE_SCHEMA["Cover_Type"] = Discrete  # 7 categories
+assert len(COVERTYPE_SCHEMA) == 55
+del i
+
+
+def load_covertype(args):
+    """
+    See https://archive.ics.uci.edu/ml/datasets/Covertype
+    """
+    # Convert to torch.
+    num_rows = min(581012, args.max_num_rows)
+    cache_filename = os.path.join(DATA, "covertype.{}.pkl".format(num_rows))
+    if os.path.exists(cache_filename):
+        dataset = load_object(cache_filename)
+    else:
+        raw_dir = os.path.join(RAWDATA, "uci-covertype")
+        raw_filename = os.path.join(raw_dir, "covtype.data")
+        if not os.path.exists(raw_filename):
+            logging.info("Downloading covertype dataset")
+            mkdir_p(raw_dir)
+            zip_filename = os.path.join(raw_dir, "covtype.data.gz")
+            urllib.request.urlretrieve(
+                "https://archive.ics.uci.edu/ml/machine-learning-databases/covtype/covtype.data.gz",
+                zip_filename)
+            subprocess.check_call(["gunzip", "-k", zip_filename])
+
+        header = list(COVERTYPE_SCHEMA.keys())
+        logging.debug(header)
+        types = list(COVERTYPE_SCHEMA.values())
+        num_cols = len(COVERTYPE_SCHEMA)
+        data = [torch.zeros(num_rows, dtype=typ.dtype) for typ in types]
+        mask = torch.zeros(num_rows, num_cols, dtype=torch.uint8)
+        supports = [defaultdict(set) for typ in types]
+        with open(raw_filename) as f:
+            reader = csv.reader(f)
+            cell_count = 0
+            for i, row in enumerate(reader):
+                if i == num_rows:
+                    break
+                for j, (cell, typ, support, col) in enumerate(zip(row, types, supports, data)):
+                    if typ is None or not cell:
+                        continue
+                    if typ is Discrete:
+                        value = support.setdefault(cell, len(support))
+                    else:
+                        value = float(cell)
+                    data[j][i] = value
+                    mask[i, j] = True
+                    cell_count += 1
+                if i % max(1, num_rows // 100) == 0:
+                    sys.stderr.write(".")
+                    sys.stderr.flush()
+        logging.info("loaded {} rows x {} features".format(num_rows, num_cols))
+        logging.debug("\n".join(
+            ["Cardinalities:"] +
+            ["{: >10} {}".format(len(support), name)
+             for name, support, typ in zip(header, supports, types)
+             if typ is Discrete]))
+
+        perm = torch.randperm(num_rows)
+        data = [col[perm].contiguous() for col in data]
+        mask = mask[perm].t().contiguous()
+        dataset = {
+            "names": header,
+            "data": data,
+            "mask": mask,
+            "supports": dict(zip(header, supports)),
+            "args": args,
+        }
+        save_object(dataset, cache_filename)
+
+    # Format columns.
+    features = []
+    data = []
+    mask = []
+    for name, col_data, col_mask in zip(dataset["names"], dataset["data"], dataset["mask"]):
+        if not col_mask.any():
+            logging.debug("Dropping empty feature: {}".format(name))
+            continue
+
+        # Add the feature.
+        typ = COVERTYPE_SCHEMA[name]
         if typ is Discrete:
             feature = typ(name, len(dataset["supports"][name]))
         else:

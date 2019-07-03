@@ -77,9 +77,9 @@ if __name__ == "__main__":
     parser.add_argument("--experiments", help="list of experiments to run",
                         default="cleanup")
     parser.add_argument("--models", help="list of models to train",
-                        default="fancysvd,treecat,vae,gain")
+                        default="fancysvd,treecat,vaeiter,gain")
     parser.add_argument("--datasets", help="list of datasets",
-                        default="housing,credit,news,census,lending")
+                        default="housing,credit,news,covertype,census,lending")
     parser.add_argument("-r", "--max-num-rows")
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("-f", "--force", action="store_true", default=False,

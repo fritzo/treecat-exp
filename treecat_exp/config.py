@@ -30,12 +30,19 @@ DEFAULT_CONFIG = {
             "annealing_rate": 0.02,
             "num_epochs": 30,
         },
-        "census": {
+        "covertype": {
             "capacity": 16,
-            "batch_size": 6144,
+            "batch_size": 4800,
             "learning_rate": 0.03,
             "annealing_rate": 0.02,
-            "num_epochs": 1,
+            "num_epochs": 5,
+        },
+        "census": {
+            "capacity": 16,
+            "batch_size": 8192,
+            "learning_rate": 0.03,
+            "annealing_rate": 0.02,
+            "num_epochs": 2,
         },
         "lending": {
             "capacity": 16,
@@ -45,8 +52,8 @@ DEFAULT_CONFIG = {
             "num_epochs": 1,
         },
     },
-    # This works on truncated data to be comparable with treecatnuts.
     "treecatmap": {
+        # These truncate data to be comparable with treecatnuts.
         "housing": {
             "capacity": 16,
             "batch_size": 128,
@@ -62,6 +69,14 @@ DEFAULT_CONFIG = {
             "num_epochs": 40,
         },
         "news": {
+            "max_num_rows": 10000,
+            "capacity": 16,
+            "batch_size": 1000,
+            "learning_rate": 0.03,
+            "annealing_rate": 0.02,
+            "num_epochs": 40,
+        },
+        "covertype": {
             "max_num_rows": 10000,
             "capacity": 16,
             "batch_size": 1000,
@@ -108,6 +123,14 @@ DEFAULT_CONFIG = {
             "batch_size": 10000,
             "annealing_rate": 0.02,
             "num_epochs": 400,
+        },
+        "covertype": {
+            "max_num_rows": 10000,
+            "capacity": 16,
+            "treecat_method": "nuts",
+            "batch_size": 10000,
+            "annealing_rate": 0.02,
+            "num_epochs": 40,
         },
         "census": {
             "max_num_rows": 7600,
@@ -192,6 +215,15 @@ DEFAULT_CONFIG = {
             "decoder_layer_sizes": [120, 64],
             "kl_factor": 1e-4,
         },
+        "covertype": {
+            "batch_size": 1000,
+            "learning_rate": 0.001,
+            "num_epochs": 4,
+            "encoder_layer_sizes": [180, 64],
+            "decoder_layer_sizes": [180, 64],
+            "kl_factor": 1e-4,
+            "vae_iters": 10,
+        },
         "census": {
             "batch_size": 1000,
             "learning_rate": 0.001,
@@ -236,6 +268,15 @@ DEFAULT_CONFIG = {
             "num_epochs": 50,
             "encoder_layer_sizes": [120, 64],
             "decoder_layer_sizes": [120, 64],
+            "kl_factor": 1e-4,
+            "vae_iters": 10,
+        },
+        "covertype": {
+            "batch_size": 1000,
+            "learning_rate": 0.001,
+            "num_epochs": 4,
+            "encoder_layer_sizes": [180, 64],
+            "decoder_layer_sizes": [180, 64],
             "kl_factor": 1e-4,
             "vae_iters": 10,
         },
@@ -307,6 +348,13 @@ DEFAULT_CONFIG = {
             "fancy_method": "IterativeSVD",
         },
         "news": {
+            "batch_size": 50000,
+            "cuda": False,
+            "fancy_n_iter": 10,
+            "fancy_svd_rank": 10,
+            "fancy_method": "IterativeSVD",
+        },
+        "covertype": {
             "batch_size": 50000,
             "cuda": False,
             "fancy_n_iter": 10,
