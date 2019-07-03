@@ -130,7 +130,7 @@ DEFAULT_CONFIG = {
             "treecat_method": "nuts",
             "batch_size": 10000,
             "annealing_rate": 0.02,
-            "num_epochs": 40,
+            "num_epochs": 400,
         },
         "census": {
             "max_num_rows": 7600,
