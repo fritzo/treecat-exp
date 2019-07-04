@@ -40,6 +40,7 @@ if __name__ == "__main__":
     parser.add_argument("--suffix", default="")
     parser.add_argument("--default-config", action="store_true")
     parser.add_argument("--seed", default=123456789, type=int)
+    parser.add_argument("--jit-after", default=1000000000, type=int)
     parser.add_argument("--cuda", action="store_true")
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
