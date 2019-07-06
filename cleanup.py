@@ -15,19 +15,31 @@ from pyro.contrib.tabular.features import Boolean, Discrete, Real
 from treecat_exp.config import fill_in_defaults
 from treecat_exp.corruption import corrupt
 from treecat_exp.fancy_impute import load_fancy_imputer, train_fancy_imputer
+from treecat_exp.gain import load_gain, train_gain
 from treecat_exp.preprocess import load_data, partition_data
 from treecat_exp.training import load_treecat, train_treecat
-from treecat_exp.util import CLEANUP, TEST, diversity, load_object, pdb_post_mortem, save_object, to_cuda
+from treecat_exp.util import CLEANUP, TEST, TRAIN, diversity, load_object, pdb_post_mortem, save_object, to_cuda
 from treecat_exp.vae import load_vae, train_vae
-from treecat_exp.gain import load_gain, train_gain
 
 
 def cleanup(name, features, data, mask, args):
+    force = args.force
+
+    # Corrupt data.
     corrupted_filename = os.path.join(CLEANUP, "{}.corrupted.pkl".format(name))
-    cleaned_filename = os.path.join(CLEANUP, "{}.cleaned.pkl".format(name))
-    if os.path.exists(cleaned_filename) and os.path.exists(corrupted_filename) and not args.force:
+    if os.path.exists(corrupted_filename) and not force:
         corrupted = load_object(corrupted_filename)
-        cleaned = load_object(cleaned_filename)
+    else:
+        force = True  # retrain and reclean
+        logging.debug("Corrupting dataset")
+        corrupted = corrupt(data, mask,
+                            delete_prob=args.delete_percent / 100.,
+                            replace_prob=args.replace_percent / 100.)
+        corrupted["args"] = args
+        save_object(corrupted, corrupted_filename)
+
+    # Train model on corrupted data.
+    if os.path.exists(os.path.join(TRAIN, "{}.model.pkl".format(name))) and not force:
         if args.model.startswith("treecat"):
             model = load_treecat(name)
         elif args.model.startswith("vae"):
@@ -38,57 +50,55 @@ def cleanup(name, features, data, mask, args):
             model = load_fancy_imputer(name)
         else:
             raise ValueError("Unknown model: {}".format(args.model))
-        return corrupted, cleaned, model
-
-    # Corrupt data.
-    logging.debug("Corrupting dataset")
-    corrupted = corrupt(data, mask,
-                        delete_prob=args.delete_percent / 100.,
-                        replace_prob=args.replace_percent / 100.)
-    corrupted["args"] = args
-    save_object(corrupted, corrupted_filename)
-
-    # Train model on corrupted data.
-    # Models should implement methods .impute(data,mask) and .log_prob(data,mask).
-    logging.debug("Training model on corrupted data")
-    if args.model.startswith("treecat"):
-        model = train_treecat(name, features, corrupted["data"], corrupted["mask"], args)
-    elif args.model.startswith("vae"):
-        model = train_vae(name, features, corrupted["data"], corrupted["mask"], args)
-    elif args.model.startswith("gain"):
-        model = train_gain(name, features, corrupted["data"], corrupted["mask"], args)
-    elif args.model.startswith("fancy"):
-        model = train_fancy_imputer(name, features, corrupted["data"], corrupted["mask"], args)
     else:
-        raise ValueError("Unknown model: {}".format(args.model))
+        force = True  # reclean
+        logging.debug("Training model on corrupted data")
+        if args.model.startswith("treecat"):
+            model = train_treecat(name, features, corrupted["data"], corrupted["mask"], args)
+        elif args.model.startswith("vae"):
+            model = train_vae(name, features, corrupted["data"], corrupted["mask"], args)
+        elif args.model.startswith("gain"):
+            model = train_gain(name, features, corrupted["data"], corrupted["mask"], args)
+        elif args.model.startswith("fancy"):
+            model = train_fancy_imputer(name, features, corrupted["data"], corrupted["mask"], args)
+        else:
+            raise ValueError("Unknown model: {}".format(args.model))
 
     # Clean up data using trained model.
-    logging.debug("Cleaning up dataset")
-    cleaned_data = [torch.empty_like(col) for col in data]
-    cleaned_mask = [True] * len(cleaned_data)
-    begin = 0
-    for batch_data, batch_mask in partition_data(corrupted["data"], corrupted["mask"], args.batch_size):
-        if args.cuda:
-            batch_data = to_cuda(batch_data)
-            batch_mask = to_cuda(batch_mask)
-        with torch.no_grad():
-            if args.model.startswith("vae"):
-                batch_data = model.impute(batch_data, batch_mask, iters=args.vae_iters)
-            elif args.model.startswith("treecat"):
-                batch_data = model.median(batch_data, batch_mask)
-            else:
-                batch_data = model.impute(batch_data, batch_mask)
-        end = begin + len(batch_data[0])
-        for cleaned_col, batch_col in zip(cleaned_data, batch_data):
-            cleaned_col[begin:end] = batch_col.cpu()
-        begin = end
-    cleaned = {
-        "feature": features,
-        "data": cleaned_data,
-        "mask": cleaned_mask,
-        "args": args,
-    }
-    save_object(cleaned, cleaned_filename)
+    cleaned_filename = os.path.join(CLEANUP, "{}.cleaned.pkl".format(name))
+    if os.path.exists(cleaned_filename) and not force:
+        cleaned = load_object(cleaned_filename)
+    else:
+        logging.debug("Cleaning up dataset")
+        cleaned_data = [torch.empty_like(col) for col in data]
+        cleaned_mask = [True] * len(cleaned_data)
+        batch_size = args.batch_size
+        if args.model.startswith("treecat"):
+            # Reduce batch size since median is expensive.
+            batch_size = (batch_size + 10 - 1) // 10
+        begin = 0
+        for batch_data, batch_mask in partition_data(corrupted["data"], corrupted["mask"], batch_size):
+            if args.cuda:
+                batch_data = to_cuda(batch_data)
+                batch_mask = to_cuda(batch_mask)
+            with torch.no_grad():
+                if args.model.startswith("vae"):
+                    batch_data = model.impute(batch_data, batch_mask, iters=args.vae_iters)
+                elif args.model.startswith("treecat"):
+                    batch_data = model.median(batch_data, batch_mask)
+                else:
+                    batch_data = model.impute(batch_data, batch_mask)
+            end = begin + len(batch_data[0])
+            for cleaned_col, batch_col in zip(cleaned_data, batch_data):
+                cleaned_col[begin:end] = batch_col.cpu()
+            begin = end
+        cleaned = {
+            "feature": features,
+            "data": cleaned_data,
+            "mask": cleaned_mask,
+            "args": args,
+        }
+        save_object(cleaned, cleaned_filename)
 
     return corrupted, cleaned, model
 

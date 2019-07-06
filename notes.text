@@ -1,0 +1,8 @@
+TreeCat Experiment |
+---- 2019-07-03 ---+
+
+-   treecat-map and treecat-nuts are running on fritzo-desk,
+    cleaning up a truncated version of the census dataset.
+    TODO:
+    - when results complete, run cleanup.ipynb and compare against fancysvd.
+    - then run vaeiter and gain (removing their manual max_num_rows in config.py)
