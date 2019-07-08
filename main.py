@@ -20,7 +20,7 @@ def cleanup(args):
         "--delete-percent={}".format(delete_percent),
     ])
     if args.max_num_rows:
-        command.append("--max_num_rows={}".format(args.max_num_rows))
+        command.append("--max-num-rows={}".format(args.max_num_rows))
     if args.force:
         command.append("--force")
     if args.verbose:
