@@ -19,9 +19,15 @@ Text = None  # We currently don't handle text data.
 
 
 def load_data(args):
-    name = "load_{}".format(args.dataset)
+    dataset = args.dataset
+    if "." in dataset:
+        dataset, max_num_rows = dataset.split(".")
+        args.max_num_rows = int(max_num_rows)
+    name = "load_{}".format(dataset)
     assert name in globals()
-    return globals()[name](args)
+    features, data, mask = globals()[name](args)
+    args.max_num_rows = data[0].size(0)
+    return features, data, mask
 
 
 def load_housing(args):
