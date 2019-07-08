@@ -201,6 +201,7 @@ if __name__ == "__main__":
     parser.add_argument("-lr", "--learning-rate", default=0.01, type=float)
     parser.add_argument("-ar", "--annealing-rate", default=0.01, type=float)
     parser.add_argument("-i", "--init-size", default=1000000000, type=int)
+    parser.add_argument("--jit-after", default=1000000000, type=int)
 
     # VAE configs
     parser.add_argument("--hidden-dim", default=64, type=int)

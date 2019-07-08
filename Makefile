@@ -50,6 +50,13 @@ cleanup-credit: FORCE
 cleanup-news: FORCE
 	python -O main.py --datasets=news --models=fancysvd,treecat16,treecat32,treecat64 --log-errors
 
+cleanup-covertype:
+	python -O main.py  --datasets=covertype --models=treecatnuts
+	python -O main.py  --datasets=covertype --models=treecatmap
+	python -O main.py  --datasets=covertype --models=fancysvd
+	python -O main.py  --datasets=covertype --models=vaeiter
+	python -O main.py  --datasets=covertype --models=gain
+
 # This trains on truncated datasets so NUTS can run on full data.
 cleanup-census:
 	python -O main.py  --datasets=census --max-num-rows=7600 --models=treecatnuts -p -j 2
