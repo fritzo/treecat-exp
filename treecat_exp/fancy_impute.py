@@ -39,7 +39,7 @@ class FancyImputer(object):
         tensor_mask = tensor_mask.byte()
         data.masked_fill_(1 - tensor_mask, np.nan)
 
-        data = data.data.numpy()
+        data = data.data.cpu().numpy()
         if self.method == 'IterativeImputer':
             ii = IterativeImputer(n_iter=self.n_iter,
                                   min_value=-10.0, max_value=10.0)
