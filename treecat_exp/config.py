@@ -30,6 +30,13 @@ DEFAULT_CONFIG = {
             "annealing_rate": 0.02,
             "num_epochs": 30,
         },
+        "molecules": {
+            "capacity": 8,
+            "treecat_method": "nuts",
+            "batch_size": 2000,
+            "annealing_rate": 0.02,
+            "num_epochs": 20,
+        },
         "covertype": {
             "capacity": 16,
             "batch_size": 4800,
@@ -73,6 +80,13 @@ DEFAULT_CONFIG = {
             "learning_rate": 0.03,
             "annealing_rate": 0.02,
             "num_epochs": 40,
+        },
+        "molecules": {
+            "capacity": 8,
+            "batch_size": 2000,
+            "learning_rate": 0.03,
+            "annealing_rate": 0.02,
+            "num_epochs": 6,
         },
         "covertype.10000": {
             "capacity": 16,
@@ -135,6 +149,13 @@ DEFAULT_CONFIG = {
             "batch_size": 10000,
             "annealing_rate": 0.02,
             "num_epochs": 400,
+        },
+        "molecules": {
+            "capacity": 8,
+            "treecat_method": "nuts",
+            "batch_size": 2000,
+            "annealing_rate": 0.02,
+            "num_epochs": 6,
         },
         "covertype.10000": {
             "capacity": 16,

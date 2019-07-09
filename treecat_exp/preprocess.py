@@ -7,6 +7,7 @@ import subprocess
 import sys
 from collections import OrderedDict, defaultdict
 
+import numpy as np
 import torch
 from pyro.contrib.examples import boston_housing
 from pyro.contrib.tabular import Boolean, Discrete, Real
@@ -709,6 +710,62 @@ def load_covertype(args):
         features.append(feature)
         data.append(col_data.to(feature.dtype))
         mask.append(col_mask)
+    return features, data, mask
+
+
+def load_molecules(args):
+    """
+    A subset of the Harvard Clean Energy Project dataset.
+    This is apparently a privately processed subset of the public dataset.
+    Ask Tang for details (thang.bui@uber.com).
+    """
+    # Convert to torch.
+    num_rows = min(60000, args.max_num_rows)
+    cache_filename = os.path.join(DATA, "molecules.{}.pkl".format(num_rows))
+    if os.path.exists(cache_filename):
+        dataset = load_object(cache_filename)
+    else:
+        raw_dir = os.path.join(RAWDATA, "harvard-cep")
+        if not os.path.exists(raw_dir):
+            raise ValueError("Data missing\n"
+                             "Please get raw data from Martin or Fritz")
+
+        grid = np.load(os.path.join(RAWDATA, "harvard-cep", "grid.npy"))
+        y_grid = np.load(os.path.join(RAWDATA, "harvard-cep", "y_grid.npy"))
+        grid = grid[:args.max_num_rows]
+        y_grid = y_grid[:args.max_num_rows]
+        grid = torch.tensor(grid, dtype=torch.long)
+        y_grid = torch.tensor(y_grid)
+
+        num_rows = len(grid)
+        booleans = torch.zeros(num_rows, 512, dtype=torch.float)
+        booleans.scatter_add_(1, grid.clamp(min=0), (grid != -1).float())
+        booleans = booleans.t().contiguous()
+        real = torch.tensor(y_grid)
+
+        names = ["b{}".format(i) for i in range(len(booleans))]
+        names.append("real")
+
+        logging.info("loaded {} rows x 513 features".format(num_rows))
+
+        perm = torch.randperm(num_rows)
+        data = [col[perm].contiguous() for col in list(booleans) + [real]]
+        dataset = {
+            "names": names,
+            "data": data,
+            "args": args,
+        }
+        save_object(dataset, cache_filename)
+
+    # Format columns.
+    features = []
+    data = []
+    mask = []
+    for name, col in zip(dataset["names"], dataset["data"]):
+        feature = (Boolean if name.startswith("b") else Real)(name)
+        features.append(feature)
+        data.append(col.to(feature.dtype))
+        mask.append(True)
     return features, data, mask
 
 
