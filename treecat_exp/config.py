@@ -204,14 +204,14 @@ DEFAULT_CONFIG = {
         "credit": {
             "learning_rate": 0.01,
             "batch_size": 1000,
-            "num_epochs": 200,
+            "num_epochs": 500,
             "gen_layer_sizes": [200, 64],
             "disc_layer_sizes": [120, 64],
         },
         "news": {
             "learning_rate": 0.01,
             "batch_size": 1000,
-            "num_epochs": 300,
+            "num_epochs": 500,
             "gen_layer_sizes": [200, 64],
             "disc_layer_sizes": [120, 64],
         },
@@ -221,6 +221,7 @@ DEFAULT_CONFIG = {
             "num_epochs": 10,
             "gen_layer_sizes": [200, 64],
             "disc_layer_sizes": [180, 64],
+            "verbose": True,
         },
         "census": {
             # untested on full data
@@ -229,6 +230,14 @@ DEFAULT_CONFIG = {
             "num_epochs": 1,
             "gen_layer_sizes": [200, 64],
             "disc_layer_sizes": [180, 64],
+        },
+        "census.7600": {
+            "batch_size": 1000,
+            "learning_rate": 0.01,
+            "num_epochs": 100,
+            "gen_layer_sizes": [200, 64],
+            "disc_layer_sizes": [180, 64],
+            "verbose": True,
         },
         "lending.100000": {
             "batch_size": 1000,
@@ -288,6 +297,23 @@ DEFAULT_CONFIG = {
             "decoder_layer_sizes": [180, 64],
             "kl_factor": 1e-4,
         },
+        "census.100000": {
+            "batch_size": 1000,
+            "learning_rate": 0.001,
+            "num_epochs": 10,
+            "encoder_layer_sizes": [180, 64],
+            "decoder_layer_sizes": [180, 64],
+            "kl_factor": 1e-4,
+            "verbose": True,
+        },
+        "lending.100000": {
+            "batch_size": 1000,
+            "learning_rate": 0.001,
+            "num_epochs": 10,
+            "encoder_layer_sizes": [120, 64],
+            "decoder_layer_sizes": [120, 64],
+            "kl_factor": 1e-4,
+        },
         "lending": {
             "batch_size": 1000,
             "learning_rate": 0.001,
@@ -334,6 +360,16 @@ DEFAULT_CONFIG = {
             "kl_factor": 1e-4,
             "vae_iters": 10,
         },
+        "census.7600": {
+            "batch_size": 1000,
+            "learning_rate": 0.001,
+            "num_epochs": 30,
+            "encoder_layer_sizes": [180, 64],
+            "decoder_layer_sizes": [180, 64],
+            "kl_factor": 1e-4,
+            "vae_iters": 10,
+            "verbose": True,
+        },
         "covertype": {
             "batch_size": 1000,
             "learning_rate": 0.001,
@@ -351,6 +387,14 @@ DEFAULT_CONFIG = {
             "decoder_layer_sizes": [180, 64],
             "kl_factor": 1e-4,
             "vae_iters": 10,
+        },
+        "census.100000": {
+            "batch_size": 1000,
+            "learning_rate": 0.001,
+            "num_epochs": 2,
+            "encoder_layer_sizes": [180, 64],
+            "decoder_layer_sizes": [180, 64],
+            "kl_factor": 1e-4,
         },
         "lending": {
             "batch_size": 1000,
@@ -429,6 +473,14 @@ DEFAULT_CONFIG = {
             "fancy_n_iter": 10,
             "fancy_svd_rank": 10,
             "fancy_method": "IterativeSVD",
+        },
+        "census.100000": {
+            "batch_size": 1000,
+            "learning_rate": 0.01,
+            "num_epochs": 10,
+            "gen_layer_sizes": [200, 64],
+            "disc_layer_sizes": [180, 64],
+            "verbose": True,
         },
         "census": {
             "batch_size": 50000,
