@@ -57,13 +57,12 @@ cleanup-covertype:
 	python -O main.py  --datasets=covertype --models=vaeiter
 	python -O main.py  --datasets=covertype --models=gain
 
-# This trains on truncated datasets so NUTS can run on full data.
 cleanup-census:
-	python -O main.py  --datasets=census --max-num-rows=7600 --models=treecatnuts -p -j 2
-	python -O main.py  --datasets=census --max-num-rows=7600 --models=treecatmap -p -j 2
-	python -O main.py  --datasets=census --max-num-rows=7600 --models=fancysvd -p -j 2 --max-num-rows=7600
-	python -O main.py  --datasets=census --max-num-rows=7600 --models=vaeiter -p -j 2 --max-num-rows=7600
-	python -O main.py  --datasets=census --max-num-rows=7600 --models=gain -p -j 2 --max-num-rows=7600
+	python -O main.py --datasets=census --models=treecatnuts
+	python -O main.py --datasets=census --models=treecatmap
+	python -O main.py --datasets=census --models=fancysvd
+	python -O main.py --datasets=census --models=vaeiter
+	python -O main.py --datasets=census --models=gain
 
 train-housing: FORCE
 	python -O train.py --dataset=housing -c 16 -n 100 -b 128 -ar 0.02 -lr 0.01 --suffix=lr_01

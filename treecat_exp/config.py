@@ -102,7 +102,7 @@ DEFAULT_CONFIG = {
         },
         "census": {
             "capacity": 16,
-            "batch_size": 8192,
+            "batch_size": 7600,
             "annealing_rate": 0.02,
             "num_epochs": 2,
         },
@@ -162,7 +162,7 @@ DEFAULT_CONFIG = {
             "treecat_method": "nuts",
             "batch_size": 7600,
             "annealing_rate": 0.02,
-            "num_epochs": 700,
+            "num_epochs": 2,
         },
         "lending.4000": {
             "capacity": 16,
