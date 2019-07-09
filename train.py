@@ -1,8 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
 import argparse
+import logging
 
 import pyro
+import torch
 
 from treecat_exp.config import fill_in_defaults
 from treecat_exp.preprocess import load_data
@@ -43,8 +45,16 @@ if __name__ == "__main__":
     parser.add_argument("--jit-after", default=1000000000, type=int)
     parser.add_argument("--cuda", action="store_true")
     parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("--profile", help="name of chrome trace output file")
     args = parser.parse_args()
     fill_in_defaults(args)
 
-    with pdb_post_mortem():
-        main(args)
+    with torch.autograd.profiler.profile(bool(args.profile), use_cuda=args.cuda) as prof:
+        with pdb_post_mortem():
+            main(args)
+    if args.profile:
+        logging.info("CPU time total:\n{}".format(prof.table(sort_by="cpu_time_total", row_limit=32)))
+        if args.cuda:
+            logging.info("CUDA time total:\n{}".format(prof.table(sort_by="cuda_time_total", row_limit=32)))
+        logging.info("Saving chrome://tracing file to {}".format(args.profile))
+        prof.export_chrome_trace(args.profile)

@@ -110,3 +110,5 @@ rawdata
 data/
 results/
 temp.results.test
+*.prof
+*.trace
