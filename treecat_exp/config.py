@@ -452,6 +452,13 @@ DEFAULT_CONFIG = {
             "fancy_svd_rank": 10,
             "fancy_method": "IterativeSVD",
         },
+        "molecules": {
+            "batch_size": 30000,
+            "cuda": False,
+            "fancy_n_iter": 10,
+            "fancy_svd_rank": 10,
+            "fancy_method": "IterativeSVD",
+        },
         "covertype": {
             "batch_size": 50000,
             "cuda": False,

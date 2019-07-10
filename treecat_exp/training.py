@@ -98,8 +98,6 @@ def train_treecat(name, features, data, mask, args):
     options = {}
     if args.treecat_method == "map":
         options["optim"] = Adam({"lr": args.learning_rate, "betas": (0.5, 0.9)})
-    elif args.treecat_method == "nuts":
-        options["nuts_config"] = {"jit_compile": args.jit_after}
     trainer = model.trainer(args.treecat_method, **options)
     for batch_data, batch_mask in partition_data(data, mask, init_size):
         if isinstance(batch_mask, torch.Tensor):
