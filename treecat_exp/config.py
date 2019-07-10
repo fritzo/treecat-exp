@@ -231,14 +231,6 @@ DEFAULT_CONFIG = {
             "gen_layer_sizes": [200, 64],
             "disc_layer_sizes": [180, 64],
         },
-        "census.7600": {
-            "batch_size": 1000,
-            "learning_rate": 0.01,
-            "num_epochs": 100,
-            "gen_layer_sizes": [200, 64],
-            "disc_layer_sizes": [180, 64],
-            "verbose": True,
-        },
         "lending.100000": {
             "batch_size": 1000,
             "learning_rate": 0.01,
@@ -475,12 +467,11 @@ DEFAULT_CONFIG = {
             "fancy_method": "IterativeSVD",
         },
         "census.100000": {
-            "batch_size": 1000,
-            "learning_rate": 0.01,
-            "num_epochs": 10,
-            "gen_layer_sizes": [200, 64],
-            "disc_layer_sizes": [180, 64],
-            "verbose": True,
+            "batch_size": 10000,
+            "cuda": False,
+            "fancy_n_iter": 10,
+            "fancy_svd_rank": 10,
+            "fancy_method": "IterativeSVD",
         },
         "census": {
             "batch_size": 50000,

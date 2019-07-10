@@ -38,16 +38,16 @@ class Generator(nn.Module):
         self.out_layer = MixedActivation()
         self.hidden_layers = nn.Sequential(*hidden_layers)
 
-    def forward(self, inputs, mask, training=False):
+    def forward(self, inputs, mask, training=False, temp=None):
         inputs = torch.cat((inputs, mask), dim=1)
         hidden = self.hidden_layers(inputs)
-        return self.out_layer(hidden, self.features, training=training, gumbel=False)
+        return self.out_layer(hidden, self.features, training=training, temp=temp)
 
-    def impute(self, inputs, mask, training=False):
+    def impute(self, inputs, mask, training=False, temp=None):
         """
         Like ``.forward()``, but ensures that observed values are untouched.
         """
-        out = self(inputs, mask, training=training)
+        out = self(inputs, mask, training=training, temp=temp)
         # fill in missing values with predicted reconstructed values
         out = out + mask * (inputs - out)
         return out
@@ -79,7 +79,7 @@ class GAINModel(object):
         self.features = features
         self.whitener = whitener
 
-    def impute(self, data, mask, iterative=False):
+    def impute(self, data, mask):
         data = self.whitener.whiten(data, mask)
         data, mask = self.one_hot.encode(data, mask)
         data, t_mask = to_dense(data, mask)
@@ -92,6 +92,9 @@ class GAINModel(object):
 def train_gain(name, features, data, mask, args):
     logging.basicConfig(format="%(relativeCreated) 9d %(message)s",
                         level=logging.DEBUG if args.verbose else logging.INFO)
+    # Use gumbel softmax if on pytorch 1.2 otherwise softmax
+    # https://github.com/pytorch/pytorch/issues/22442
+    temp = 0.1 if torch.__version__ <= '1.2' else None
     torch.manual_seed(args.seed)
     # normalize data
     whitener = Whitener(features, data, mask)
@@ -127,7 +130,7 @@ def train_gain(name, features, data, mask, args):
                 batch_mask = to_cuda(batch_mask)
                 hint = to_cuda(hint)
             with torch.no_grad():
-                gen_data = generator.impute(batch_data, batch_mask, training=True)
+                gen_data = generator.impute(batch_data, batch_mask, training=False, temp=temp)
             if torch.isnan(gen_data).any().item():
                 logging.debug("NaN in generated data")
 
@@ -160,22 +163,23 @@ def train_gain(name, features, data, mask, args):
                 hint = to_cuda(hint)
 
             inverted_mask = 1 - batch_mask
-            gen_data = generator(batch_data, batch_mask, training=True)
-            imputed_data = batch_data * batch_mask + inverted_mask * gen_data
+            gen_data = generator(batch_data, batch_mask, training=True, temp=temp)
+            imputed_data = generator.impute(batch_data, batch_mask, training=False, temp=temp)
             pred = discriminator(imputed_data, hint)
 
             if torch.isnan(gen_data).any().item():
                 logging.debug("NaN in generated data")
-                bb()
 
             # we want to fool the discriminator now
             loss = F.binary_cross_entropy(pred, inverted_mask)
             # TODO downweight the reconstruction loss term as hyperparam?
-            loss += reconstruction_loss_function(batch_mask * gen_data,
-                                                 batch_mask * batch_data,
-                                                 features,
-                                                 reduction="sum") / torch.sum(batch_mask)
-            if args.verbose and i % 10 == 0 and stop:
+            recon_loss = reconstruction_loss_function(batch_mask * gen_data,
+                                                      batch_mask * batch_data,
+                                                      features,
+                                                      reduction="sum") / \
+                torch.sum(batch_mask)
+            loss += recon_loss
+            if args.verbose and stop:
                 missing_data = torch.stack([x.float() for x in batch_data_list], -1)
                 if args.cuda:
                     missing_data = to_cuda(missing_data)
@@ -184,6 +188,7 @@ def train_gain(name, features, data, mask, args):
                                                             features,
                                                             reduction="sum") / torch.sum(inverted_mask)
                 logging.debug("imputation loss = {}".format(missing_loss.item()))
+                logging.debug("observed loss = {}".format(recon_loss.item()))
                 stop = False
             loss.backward()
             optim_g.step()

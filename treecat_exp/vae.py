@@ -154,7 +154,7 @@ def train_vae(name, features, data, mask, args):
             kld = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
             # scale kl by hyperparam
             loss = reconstruction_loss + args.kl_factor * kld
-            if i % 10 == 0 and stop and args.verbose:
+            if stop and args.verbose:
                 inverted_mask = 1 - batch_mask
                 missing_data = torch.stack([x.float() for x in batch_data_list], -1)
                 if args.cuda:
@@ -168,7 +168,6 @@ def train_vae(name, features, data, mask, args):
                 logging.debug("kld = {}".format((args.kl_factor * kld).item()))
                 logging.debug("imputation loss = {}".format(imputation_loss.item()))
                 stop = False
-#                 bb()
 
             loss.backward()
             optim.step()
